@@ -50,3 +50,7 @@ gscp
 *~
 *swp
 *swo
+
+#External Projects
+libssh2
+GSCP

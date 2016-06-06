@@ -10,7 +10,7 @@ struct _ssh_connection
   char *password;
 };
 
-typedef _ssh_connection ssh_connection;
+typedef struct _ssh_connection ssh_connection;
 
 struct _ssh_path_info
 {
@@ -20,7 +20,7 @@ struct _ssh_path_info
   ssh_connection *con;
 };
 
-typedef _ssh_path_info ssh_path_info;
+typedef struct _ssh_path_info ssh_path_info;
 
 int parse_ssh_path(const char *ssh_path, ssh_path_info *info);
 

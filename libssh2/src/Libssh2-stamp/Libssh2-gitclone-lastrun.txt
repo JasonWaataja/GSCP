@@ -1,0 +1,3 @@
+repository='https://github.com/libssh2/libssh2'
+module=''
+tag=''
