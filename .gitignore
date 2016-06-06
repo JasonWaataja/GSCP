@@ -52,5 +52,5 @@ gscp
 *swo
 
 #External Projects
-libssh2
-GSCP
+libssh2/
+GSCP/
