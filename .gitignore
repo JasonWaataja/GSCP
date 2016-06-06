@@ -44,7 +44,7 @@ CPackConfig.cmake
 CPackSourceConfig.cmake
 
 #executable
-libssh2test
+gscp
 
 #vim
 *~
