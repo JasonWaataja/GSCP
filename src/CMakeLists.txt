@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0)
-project(GSCP)
+#project(GSCP)
 
 file(GLOB SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/*.c)
 add_executable(gscp ${SOURCES})
@@ -10,3 +10,6 @@ add_executable(gscp ${SOURCES})
 
 find_package(Libssh2 REQUIRED CONFIG)
 target_link_libraries(gscp Libssh2::libssh2)
+
+install(TARGETS gscp
+   RUNTIME DESTINATION bin)

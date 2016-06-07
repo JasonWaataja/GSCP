@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <stdlib.h>
+#include <libssh2.h>
 
 #define SSH_DEFAULT_PORT 22
 
@@ -28,11 +29,18 @@ struct _ssh_path_info
 
 typedef struct _ssh_path_info ssh_path_info;
 
+ssh_connection *ssh_connection_new(const char *username, const char *password);
+void ssh_connectin_free(ssh_connection *con);
+
 int is_valid_ssh_path(ssh_path_info *info);
 int is_valid_ssh_connection(ssh_connection *con);
 
-int read_from_ssh(ssh_path_info *info, uint8_t *data, size_t *mem_size);
-int write_to_ssh(ssh_path_info *info, const uint8_t *data, size_t *mem_size);
+void close_socket(int socket);
+//void close_libssh2_session(LIBSSH2_SESSION *session, const char *close_messg);
+//void close_libssh2_channel(LIBSSH2_CHANNEL *channel);
+
+int read_from_ssh(ssh_path_info *info, char *data, size_t *mem_size);
+int write_to_ssh(ssh_path_info *info, const char *data, size_t *mem_size);
 
 int parse_ssh_path(const char *ssh_path, ssh_path_info *info);
 
