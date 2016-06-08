@@ -9,7 +9,7 @@
 
 struct _ssh_connection
 {
-  unsigned long hostaddr;
+  uint32_t hostaddr;
   unsigned int port;
   int auth_pw;
   //char *fingerprint;
@@ -30,7 +30,7 @@ struct _ssh_path_info
 typedef struct _ssh_path_info ssh_path_info;
 
 ssh_connection *ssh_connection_new(const char *username, const char *password);
-void ssh_connectin_free(ssh_connection *con);
+void ssh_connection_free(ssh_connection *con);
 
 int is_valid_ssh_path(ssh_path_info *info);
 int is_valid_ssh_connection(ssh_connection *con);

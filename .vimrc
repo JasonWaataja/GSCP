@@ -1,1 +1,1 @@
-noremap <F5> :w<CR>:make<CR>:!./GSCP/src/GSCP-build/gscp<CR>
+noremap <F5> :!./GSCP/src/GSCP-build/gscp<CR>

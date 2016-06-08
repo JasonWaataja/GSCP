@@ -37,19 +37,39 @@ int main(int argc, char *argv[])
   libssh2_init(0);
 
   ssh_connection *con;
+  char password[256];
+  fgets(password, sizeof(password), stdin);
   con = ssh_connection_new("jason", "W3@Q2ttLYy");
   if (con)
     {
       con->auth_pw = 1;
       con->hostaddr = inet_addr("127.0.0.1");
       ssh_path_info inf;
-      inf.on_lhost = false;
+      inf.con = con;
+      inf.on_lhost = 0;
+      /*char path[] = "/home/jason/Music/Danny/rip.flac";*/
       char path[] = "/home/jason/testfile.txt";
       inf.path = (char *) malloc(sizeof(path));
       strcpy(inf.path, path);
+      char *data;
+      size_t mem_size;
+      read_from_ssh(&inf, data, &mem_size);
+      printf("%zu\n", mem_size);
+      for (int i = 0; i < mem_size; i++)
+        {
+          printf("%c", data[i]);
+        }
+      printf("\n");
+      free(data);
+      free(inf.path);
+      /*printf("%z\n", mem_size);*/
     }
+  ssh_connection_free(con);
+
 
   libssh2_exit();
+
+
     /*unsigned long hostaddr;*/
     /*int sock, i, auth_pw = 1;*/
     /*struct sockaddr_in sin;*/

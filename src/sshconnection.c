@@ -38,11 +38,10 @@ int read_from_ssh(ssh_path_info *info, char *data, size_t *mem_size)
 
   if (info->on_lhost)
     {
-
+      return 1;
     }
   else
     {
-
       int result;
 #ifdef WIN32
       WSADATA wsadata;
@@ -61,7 +60,8 @@ int read_from_ssh(ssh_path_info *info, char *data, size_t *mem_size)
       struct sockaddr_in sin;
       sin.sin_family = AF_INET;
       sin.sin_port = htons(info->con->port);
-      sin.sin_addr.s_addr = info->con->port;
+      sin.sin_addr.s_addr = info->con->hostaddr;
+      /*sin.sin_addr.s_addr = inet_addr("127.0.0.1");*/
       if (connect(sock, (struct sockaddr*)(&sin), sizeof(struct sockaddr_in)) != 0)
         {
           fprintf(stderr, "failed to connect!\n");
@@ -125,6 +125,7 @@ int read_from_ssh(ssh_path_info *info, char *data, size_t *mem_size)
             {
               size_t old_size = *mem_size;
               *mem_size += read_size;
+              printf("%zu\n", *mem_size);
               if (old_size == 0)
                 {
                   data = (char *) malloc(sizeof(char) * read_size);
@@ -149,6 +150,11 @@ int read_from_ssh(ssh_path_info *info, char *data, size_t *mem_size)
                       close_socket(sock);
                       return 0;
                     }
+                }
+              if (read_size > 0)
+                {
+                  printf("About to copy\n");
+                  memcpy(data + old_size, mem_buf, read_size);
                 }
             }
           else if (result < 0)
@@ -224,9 +230,10 @@ ssh_connection *ssh_connection_new(const char *username, const char *password)
     return con;
 
   con->username = (char *) malloc(sizeof(char) * (strlen(username) + 1));
-  con->password = (char *) malloc(sizeof(char) * (strlen(username) + 1));
+  con->password = (char *) malloc(sizeof(char) * (strlen(password) + 1));
   if (con->username == NULL || con->password == NULL)
     {
+      fprintf(stderr, "Error creating connection.\n");
       free(con->username);
       free(con->password);
       free(con);
@@ -235,10 +242,11 @@ ssh_connection *ssh_connection_new(const char *username, const char *password)
 
   strcpy(con->username, username);
   strcpy(con->password, password);
+  con->port = SSH_DEFAULT_PORT;
   return con;
 }
 
-void ssh_connectin_free(ssh_connection *con)
+void ssh_connection_free(ssh_connection *con)
 {
   free(con->username);
   free(con->password);
