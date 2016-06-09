@@ -28,8 +28,9 @@
 #include <stdio.h>
 #include <ctype.h>
 
-int read_from_ssh(ssh_path_info *info, char *data, size_t *mem_size)
+int read_from_ssh(ssh_path_info *info, char **data, size_t *mem_size)
 {
+  *data = NULL;
 
   if (!is_valid_ssh_path(info))
     {
@@ -113,23 +114,24 @@ int read_from_ssh(ssh_path_info *info, char *data, size_t *mem_size)
       libssh2_struct_stat_size got = 0;
       *mem_size = 0;
 
+      ssize_t bytes_read;
       while (got < fileinfo.st_size)
         {
-          char mem_buf[1024];
+          char mem_buf[SSH_READ_SIZE];
           int read_size = sizeof(mem_buf);
           if ((fileinfo.st_size - got) < read_size)
-            read_size = (int) (fileinfo.st_size - got);
+            read_size = (size_t) (fileinfo.st_size - got);
 
-          result = libssh2_channel_read(channel, mem_buf, read_size);
-          if (result > 0)
+          bytes_read = libssh2_channel_read(channel, mem_buf, read_size);
+          /* Note, excludes if it read 0. It doesn't do anything.  */
+          if (bytes_read > 0)
             {
               size_t old_size = *mem_size;
-              *mem_size += read_size;
-              printf("%zu\n", *mem_size);
+              *mem_size += bytes_read;
               if (old_size == 0)
                 {
-                  data = (char *) malloc(sizeof(char) * read_size);
-                  if (!data)
+                  *data = (char *) malloc(sizeof(char) * bytes_read);
+                  if (!*data)
                     {
                       libssh2_channel_free(channel);
                       libssh2_session_disconnect(session,
@@ -141,8 +143,10 @@ int read_from_ssh(ssh_path_info *info, char *data, size_t *mem_size)
                 }
               else
                 {
-                  if (!realloc(data, *mem_size))
+                  if (!realloc(*data, *mem_size))
                     {
+                      free(*data);
+                      *data = NULL;
                       libssh2_channel_free(channel);
                       libssh2_session_disconnect(session,
                                                  "Error: Failed to allocate data.");
@@ -151,14 +155,12 @@ int read_from_ssh(ssh_path_info *info, char *data, size_t *mem_size)
                       return 0;
                     }
                 }
-              if (read_size > 0)
-                {
-                  printf("About to copy\n");
-                  memcpy(data + old_size, mem_buf, read_size);
-                }
+              memcpy(*data + old_size, mem_buf, bytes_read);
             }
-          else if (result < 0)
+          else if (bytes_read < 0)
             {
+              free(*data);
+              *data = NULL;
               fprintf(stderr, "libssh2_channel_read() failed: %d\n", result);
               libssh2_channel_free(channel);
               libssh2_session_disconnect(session, "Error");
@@ -166,7 +168,7 @@ int read_from_ssh(ssh_path_info *info, char *data, size_t *mem_size)
               close_socket(sock);
               return 0;
             }
-          got += result;
+          got += bytes_read;
         }
       libssh2_channel_free(channel);
       channel = NULL;
@@ -177,7 +179,10 @@ int read_from_ssh(ssh_path_info *info, char *data, size_t *mem_size)
       return 1;
     }
 }
-int write_to_ssh(ssh_path_info *info, const char *data, size_t *mem_size);
+int write_to_ssh(ssh_path_info *info, const char *const *data, size_t *mem_size)
+{
+  return 0;
+}
 
 int parse_ssh_path(const char *ssh_path, ssh_path_info *info)
 {

@@ -7,6 +7,12 @@
 
 #define SSH_DEFAULT_PORT 22
 
+#define SSH_READ_SIZE 1024
+#define SSH_WRITE_SIZE 1024
+
+#define FILE_WRITE_SIZE 2048
+#define FILE_WRITE_SIZE 2048
+
 struct _ssh_connection
 {
   uint32_t hostaddr;
@@ -39,8 +45,8 @@ void close_socket(int socket);
 //void close_libssh2_session(LIBSSH2_SESSION *session, const char *close_messg);
 //void close_libssh2_channel(LIBSSH2_CHANNEL *channel);
 
-int read_from_ssh(ssh_path_info *info, char *data, size_t *mem_size);
-int write_to_ssh(ssh_path_info *info, const char *data, size_t *mem_size);
+int read_from_ssh(ssh_path_info *info, char **data, size_t *mem_size);
+int write_to_ssh(ssh_path_info *info, const char *const *data, size_t *mem_size);
 
 int parse_ssh_path(const char *ssh_path, ssh_path_info *info);
 

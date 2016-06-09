@@ -38,8 +38,13 @@ int main(int argc, char *argv[])
 
   ssh_connection *con;
   char password[256];
+  printf("Enter the password.\n");
   fgets(password, sizeof(password), stdin);
-  con = ssh_connection_new("jason", "W3@Q2ttLYy");
+  size_t length = strlen(password);
+  char *nl_pos;
+  if ((nl_pos = strchr(password, '\n')))
+      *nl_pos = '\0';
+  con = ssh_connection_new("jason", password);
   if (con)
     {
       con->auth_pw = 1;
@@ -53,16 +58,14 @@ int main(int argc, char *argv[])
       strcpy(inf.path, path);
       char *data;
       size_t mem_size;
-      read_from_ssh(&inf, data, &mem_size);
-      printf("%zu\n", mem_size);
+      read_from_ssh(&inf, &data, &mem_size);
       for (int i = 0; i < mem_size; i++)
         {
-          printf("%c", data[i]);
+          putchar(data[i]);
         }
-      printf("\n");
+      /*putchar('\n');*/
       free(data);
       free(inf.path);
-      /*printf("%z\n", mem_size);*/
     }
   ssh_connection_free(con);
 
