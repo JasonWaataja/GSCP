@@ -53,16 +53,19 @@ int main(int argc, char *argv[])
       inf.con = con;
       inf.on_lhost = 0;
       /*char path[] = "/home/jason/Music/Danny/rip.flac";*/
-      char path[] = "/home/jason/testfile.txt";
+      char path[] = "/home/jason/testfile2.txt";
       inf.path = (char *) malloc(sizeof(path));
       strcpy(inf.path, path);
       char *data;
       size_t mem_size;
-      read_from_ssh(&inf, &data, &mem_size);
-      for (int i = 0; i < mem_size; i++)
-        {
-          putchar(data[i]);
-        }
+      char string_to_write[] = "Hello scp";
+      mem_size = sizeof(string_to_write);
+      write_to_ssh(&inf, &data, &mem_size);
+      /*read_from_ssh(&inf, &data, &mem_size);*/
+      /*for (int i = 0; i < mem_size; i++)*/
+        /*{*/
+          /*putchar(data[i]);*/
+        /*}*/
       /*putchar('\n');*/
       free(data);
       free(inf.path);

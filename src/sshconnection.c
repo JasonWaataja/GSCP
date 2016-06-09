@@ -179,7 +179,7 @@ int read_from_ssh(ssh_path_info *info, char **data, size_t *mem_size)
       return 1;
     }
 }
-int write_to_ssh(ssh_path_info *info, const char *const *data, size_t *mem_size)
+int write_to_ssh(ssh_path_info *info, char *const *data, size_t *mem_size)
 {
   if (!is_valid_ssh_path(info))
     {
@@ -239,8 +239,54 @@ int write_to_ssh(ssh_path_info *info, const char *const *data, size_t *mem_size)
         }
       LIBSSH2_CHANNEL *channel;
       libssh2_struct_stat fileinfo;
+      channel = libssh2_scp_send64(session, info->path, fileinfo.st_mode & 0777,
+                                   (unsigned long)fileinfo.st_size, 0, 0);
+      if (!channel)
+        {
+          char *errmsg;
+          int errlen;
+          int err = libssh2_session_last_error(session, &errmsg, &errlen, 0);
+          fprintf(stderr, "Unable to open a session: (%d) %s\n", err, errmsg);
+          libssh2_session_disconnect(session, "Error");
+          libssh2_session_free(session);
+          close_socket(sock);
+        }
+      size_t current_pos = 0;
+      size_t write_size;
+      ssize_t bytes_written;
+      do
+        {
+          write_size = ((*mem_size - current_pos >= SSH_WRITE_SIZE) ? SSH_WRITE_SIZE
+                                                                   : (*mem_size - current_pos));
+          bytes_written = libssh2_channel_write(channel, *data + current_pos, write_size);
+          if (bytes_written < 0)
+            {
+              fprintf(stderr, "Error writing data.\n");
+              libssh2_channel_send_eof(channel);
+              libssh2_channel_wait_eof(channel);
+              libssh2_channel_wait_closed(channel);
+              libssh2_channel_free(channel);
+              channel = NULL;
+              libssh2_session_disconnect(session, "Error");
+              libssh2_session_free(session);
+              close_socket(sock);
+              return 0;
+            }
+          current_pos += bytes_written;
+        }
+      while (current_pos < *mem_size);
+
+      libssh2_channel_send_eof(channel);
+      libssh2_channel_wait_eof(channel);
+      libssh2_channel_wait_closed(channel);
+      libssh2_channel_free(channel);
+      channel = NULL;
+      libssh2_session_disconnect(session, "Shutting Down");
+      libssh2_session_free(session);
+      close_socket(sock);
+      
+      return 1;
     }
-  return 0;
 }
 
 int parse_ssh_path(const char *ssh_path, ssh_path_info *info)
