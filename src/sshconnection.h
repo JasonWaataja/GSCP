@@ -46,7 +46,7 @@ void close_socket(int socket);
 //void close_libssh2_channel(LIBSSH2_CHANNEL *channel);
 
 int read_from_ssh(ssh_path_info *info, char **data, size_t *mem_size);
-int write_to_ssh(ssh_path_info *info, char *const *data, size_t *mem_size);
+int write_to_ssh(ssh_path_info *info, const char *data, size_t mem_size);
 
 int parse_ssh_path(const char *ssh_path, ssh_path_info *info);
 

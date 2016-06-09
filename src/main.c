@@ -59,8 +59,8 @@ int main(int argc, char *argv[])
       char *data;
       size_t mem_size;
       char string_to_write[] = "Hello scp";
-      mem_size = sizeof(string_to_write);
-      write_to_ssh(&inf, &data, &mem_size);
+      mem_size = strlen(string_to_write);
+      write_to_ssh(&inf, string_to_write, mem_size);
       /*read_from_ssh(&inf, &data, &mem_size);*/
       /*for (int i = 0; i < mem_size; i++)*/
         /*{*/
@@ -70,7 +70,7 @@ int main(int argc, char *argv[])
       free(data);
       free(inf.path);
     }
-  ssh_connection_free(con);
+  /*ssh_connection_free(con);*/
 
 
   libssh2_exit();

@@ -179,7 +179,7 @@ int read_from_ssh(ssh_path_info *info, char **data, size_t *mem_size)
       return 1;
     }
 }
-int write_to_ssh(ssh_path_info *info, char *const *data, size_t *mem_size)
+int write_to_ssh(ssh_path_info *info, const char *data, size_t mem_size)
 {
   if (!is_valid_ssh_path(info))
     {
@@ -239,8 +239,14 @@ int write_to_ssh(ssh_path_info *info, char *const *data, size_t *mem_size)
         }
       LIBSSH2_CHANNEL *channel;
       libssh2_struct_stat fileinfo;
-      channel = libssh2_scp_send64(session, info->path, fileinfo.st_mode & 0777,
-                                   (unsigned long)fileinfo.st_size, 0, 0);
+      /*channel = libssh2_scp_send64(session, info->path, fileinfo.st_mode & 0777,*/
+                                   /*(unsigned long)fileinfo.st_size, 0, 0);*/
+      channel = libssh2_scp_send64(session, info->path, 0777,
+                                   mem_size, 0, 0);
+      /*channel = libssh2_scp_send(session, info->path, fileinfo.st_mode & 0777,*/
+                                   /*(unsigned long)fileinfo.st_size);*/
+      /*channel = libssh2_scp_send(session, info->path, fileinfo.st_mode & 0777,*/
+                                   /*(unsigned long)fileinfo.st_size);*/
       if (!channel)
         {
           char *errmsg;
@@ -256,15 +262,24 @@ int write_to_ssh(ssh_path_info *info, char *const *data, size_t *mem_size)
       ssize_t bytes_written;
       do
         {
-          write_size = ((*mem_size - current_pos >= SSH_WRITE_SIZE) ? SSH_WRITE_SIZE
-                                                                   : (*mem_size - current_pos));
-          bytes_written = libssh2_channel_write(channel, *data + current_pos, write_size);
+          write_size = ((mem_size - current_pos >= SSH_WRITE_SIZE) ? SSH_WRITE_SIZE
+                                                                   : (mem_size - current_pos));
+          printf("%zu\n", write_size);
+          bytes_written = libssh2_channel_write(channel, data + current_pos, write_size);
+          printf("%zu bytes written.\n", bytes_written);
           if (bytes_written < 0)
             {
-              fprintf(stderr, "Error writing data.\n");
+              printf("Error sending data.\n");
+
+              fprintf(stderr, "Sending EOF\n");
               libssh2_channel_send_eof(channel);
+
+              fprintf(stderr, "Waiting for EOF\n");
               libssh2_channel_wait_eof(channel);
+
+              fprintf(stderr, "Waiting for channel to close\n");
               libssh2_channel_wait_closed(channel);
+
               libssh2_channel_free(channel);
               channel = NULL;
               libssh2_session_disconnect(session, "Error");
@@ -274,11 +289,18 @@ int write_to_ssh(ssh_path_info *info, char *const *data, size_t *mem_size)
             }
           current_pos += bytes_written;
         }
-      while (current_pos < *mem_size);
+      while (current_pos < mem_size);
+      printf("Done Writing");
 
+      fprintf(stderr, "Sending EOF\n");
       libssh2_channel_send_eof(channel);
+
+      fprintf(stderr, "Waiting for EOF\n");
       libssh2_channel_wait_eof(channel);
+
+      fprintf(stderr, "Waiting for channel to close\n");
       libssh2_channel_wait_closed(channel);
+
       libssh2_channel_free(channel);
       channel = NULL;
       libssh2_session_disconnect(session, "Shutting Down");
