@@ -71,59 +71,66 @@ int read_from_ssh(ssh_path_info *info, char **data, size_t *mem_size)
   else
     {
       int result;
-#ifdef WIN32
-      WSADATA wsadata;
-      int err;
-
-      err = WSAStartup(MAKEWORD(2,0), &wsadata);
-      if (err != 0) {
-          fprintf(stderr, "WSAStartup failed with error: %d\n", err);
-          return 0;
-      }
-#endif
-
-      /* Right now I'm assuming that libssh2 has been init with libssh2_init(0).  */
-
-      int sock = socket(AF_INET, SOCK_STREAM, 0);
-      struct sockaddr_in sin;
-      sin.sin_family = AF_INET;
-      sin.sin_port = htons(info->con->port);
-      sin.sin_addr.s_addr = info->con->hostaddr;
-      /*sin.sin_addr.s_addr = inet_addr("127.0.0.1");*/
-      if (connect(sock, (struct sockaddr*)(&sin), sizeof(struct sockaddr_in)) != 0)
+      LIBSSH2_SESSION *session;
+      int sock;
+      result = ssh_connection_session_open(info->con, &sock, &session);
+      if (!result)
         {
-          fprintf(stderr, "failed to connect!\n");
           return 0;
         }
+/*#ifdef WIN32*/
+      /*WSADATA wsadata;*/
+      /*int err;*/
 
-      LIBSSH2_SESSION *session = libssh2_session_init();
-      if (!session)
-        return 0;
+      /*err = WSAStartup(MAKEWORD(2,0), &wsadata);*/
+      /*if (err != 0) {*/
+          /*fprintf(stderr, "WSAStartup failed with error: %d\n", err);*/
+          /*return 0;*/
+      /*}*/
+/*#endif*/
 
-      result = libssh2_session_handshake(session, sock);
-      if (result)
-        {
-          fprintf(stderr, "Failure establishing SSH session: %d\n", result);
-          close_socket(sock);
-          return 0;
-        }
-      const char *finger_temp;
-      finger_temp = libssh2_hostkey_hash(session, LIBSSH2_HOSTKEY_HASH_SHA1);
-      /* Check to see if it's NULL.  */
-      /*size_t finger_len = strlen(finger_temp);*/
-      /*info->con->fingerprint = malloc(sizeof(char) * (finger_len + 1));*/
-      /*strcpy(info->con->fingerprint, finger_temp);*/
+      /*[> Right now I'm assuming that libssh2 has been init with libssh2_init(0).  <]*/
 
-      int auth_success = libssh2_userauth_password(session, info->con->username, info->con->password);
-      if (auth_success)
-        {
-          fprintf(stderr, "Authentication by password failed.\n");
-          libssh2_session_disconnect(session,
-                                     "Error: Failure authenticating.");
-          libssh2_session_free(session);
-          close_socket(sock);
-          return 0;
-        }
+      /*int sock = socket(AF_INET, SOCK_STREAM, 0);*/
+      /*struct sockaddr_in sin;*/
+      /*sin.sin_family = AF_INET;*/
+      /*sin.sin_port = htons(info->con->port);*/
+      /*sin.sin_addr.s_addr = info->con->hostaddr;*/
+      /*[>sin.sin_addr.s_addr = inet_addr("127.0.0.1");<]*/
+      /*if (connect(sock, (struct sockaddr*)(&sin), sizeof(struct sockaddr_in)) != 0)*/
+        /*{*/
+          /*fprintf(stderr, "failed to connect!\n");*/
+          /*return 0;*/
+        /*}*/
+
+      /*LIBSSH2_SESSION *session = libssh2_session_init();*/
+      /*if (!session)*/
+        /*return 0;*/
+
+      /*result = libssh2_session_handshake(session, sock);*/
+      /*if (result)*/
+        /*{*/
+          /*fprintf(stderr, "Failure establishing SSH session: %d\n", result);*/
+          /*close_socket(sock);*/
+          /*return 0;*/
+        /*}*/
+      /*const char *finger_temp;*/
+      /*finger_temp = libssh2_hostkey_hash(session, LIBSSH2_HOSTKEY_HASH_SHA1);*/
+      /*[> Check to see if it's NULL.  <]*/
+      /*[>size_t finger_len = strlen(finger_temp);<]*/
+      /*[>info->con->fingerprint = malloc(sizeof(char) * (finger_len + 1));<]*/
+      /*[>strcpy(info->con->fingerprint, finger_temp);<]*/
+
+      /*int auth_success = libssh2_userauth_password(session, info->con->username, info->con->password);*/
+      /*if (auth_success)*/
+        /*{*/
+          /*fprintf(stderr, "Authentication by password failed.\n");*/
+          /*libssh2_session_disconnect(session,*/
+                                     /*"Error: Failure authenticating.");*/
+          /*libssh2_session_free(session);*/
+          /*close_socket(sock);*/
+          /*return 0;*/
+        /*}*/
       LIBSSH2_CHANNEL *channel;
       libssh2_struct_stat fileinfo;
       channel = libssh2_scp_recv2(session, info->path, &fileinfo);
@@ -200,9 +207,10 @@ int read_from_ssh(ssh_path_info *info, char **data, size_t *mem_size)
       libssh2_channel_free(channel);
       channel = NULL;
 
-      libssh2_session_disconnect(session, "Normal Shutdown");
-      libssh2_session_free(session);
-      close_socket(sock);
+      ssh_connection_session_close(&session, sock, "Normal shutdown");
+      /*libssh2_session_disconnect(session, "Normal Shutdown");*/
+      /*libssh2_session_free(session);*/
+      /*close_socket(sock);*/
       return 1;
     }
 }
@@ -366,18 +374,19 @@ int parse_ssh_path(const char *ssh_path, ssh_path_info *info)
 
 int gscp(ssh_path_info *source, ssh_path_info *dest)
 {
-  char *file_data;
-  size_t mem_size;
-  int result;
-  result = read_from_ssh(source, &file_data, &mem_size);
-  if (!result)
-    return 0;
+  
+  /*char *file_data;*/
+  /*size_t mem_size;*/
+  /*int result;*/
+  /*result = read_from_ssh(source, &file_data, &mem_size);*/
+  /*if (!result)*/
+    /*return 0;*/
 
-  result = write_to_ssh(dest, file_data, mem_size);
-  if (!result)
-    return 0;
+  /*result = write_to_ssh(dest, file_data, mem_size);*/
+  /*if (!result)*/
+    /*return 0;*/
 
-  return 1;
+  /*return 1;*/
 }
 
 int is_valid_ssh_path(ssh_path_info *info)
@@ -481,4 +490,74 @@ int get_ssh_path_info_from_user(ssh_path_info *info)
   fgets(string_input, max_input_len, stdin);
   string_input[strchr(string_input, '\n') - string_input] = '\0';
   
+  return 0;
+}
+
+int ssh_connection_session_open(ssh_connection *con, int *sock, LIBSSH2_SESSION **session)
+{
+  *sock = 0;
+  *session = NULL;
+
+  int result;
+#ifdef WIN32
+  WSADATA wsadata;
+  int err;
+
+  err = WSAStartup(MAKEWORD(2,0), &wsadata);
+  if (err != 0) {
+      fprintf(stderr, "WSAStartup failed with error: %d\n", err);
+      return 0;
+  }
+#endif
+
+  *sock = socket(AF_INET, SOCK_STREAM, 0);
+  struct sockaddr_in sin;
+  sin.sin_family = AF_INET;
+  sin.sin_port = con->port;
+  sin.sin_addr.s_addr = con->hostaddr;
+  if (connect(*sock, (struct sockaddr *)(&sin), sizeof(struct sockaddr_in)) != 0)
+    {
+      fprintf(stderr, "Error, failed to connect to ip %i on port %i\n", con->hostaddr, con->port);
+      return 0;
+    }
+
+  *session = libssh2_session_init();
+  if (!(*session))
+    {
+      fprintf(stderr, "Error, can't establish ssh session\n");
+      close_socket(*sock);
+      return 0;
+    }
+  result = libssh2_session_handshake(*session, *sock);
+  if (result)
+    {
+      fprintf(stderr, "Error, failure with handshake\n");
+      close_socket(*sock);
+      return 0;
+    }
+  const char *finger_temp;
+  finger_temp = libssh2_hostkey_hash(*session, LIBSSH2_HOSTKEY_HASH_SHA1);
+  /* Check to see if it's NULL.  */
+  /*size_t finger_len = strlen(finger_temp);*/
+  /*info->con->fingerprint = malloc(sizeof(char) * (finger_len + 1));*/
+  /*strcpy(info->con->fingerprint, finger_temp);*/
+  int auth_success = libssh2_userauth_password(*session, con->username, con->password);
+  if (auth_success)
+    {
+      fprintf(stderr, "Authentication by password failed.\n");
+      libssh2_session_disconnect(*session,
+                                 "Error: Failure authenticating.");
+      libssh2_session_free(*session);
+      close_socket(*sock);
+      return 0;
+    }
+  return 1;
+}
+
+int ssh_connection_session_close(LIBSSH2_SESSION **session, int sock, const char *message)
+{
+  libssh2_session_disconnect(*session, message);
+  libssh2_session_free(*session);
+  close_socket(sock);
+  return 1;
 }

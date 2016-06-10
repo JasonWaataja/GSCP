@@ -38,6 +38,9 @@ typedef struct _ssh_path_info ssh_path_info;
 ssh_connection *ssh_connection_new(const char *username, const char *password);
 void ssh_connection_free(ssh_connection *con);
 
+int ssh_connection_session_open(ssh_connection *con, int *sock, LIBSSH2_SESSION **session);
+int ssh_connection_session_close(LIBSSH2_SESSION **session, int sock, const char *message);
+
 int is_valid_ssh_path(ssh_path_info *info);
 int is_valid_ssh_connection(ssh_connection *con);
 
