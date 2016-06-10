@@ -52,4 +52,6 @@ int parse_ssh_path(const char *ssh_path, ssh_path_info *info);
 
 int gscp(ssh_path_info *source, ssh_path_info *dest);
 
+int get_ssh_path_info_from_user(ssh_path_info *info);
+
 #endif /* SSHCONNECTION_H */ 

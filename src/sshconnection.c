@@ -34,11 +34,38 @@ int read_from_ssh(ssh_path_info *info, char **data, size_t *mem_size)
 
   if (!is_valid_ssh_path(info))
     {
+      fprintf(stderr, "Error: Not a valid ssh path\n");
       return 0;
     }
 
   if (info->on_lhost)
     {
+      FILE *local_file;
+      local_file = fopen(info->path, "rb");
+      if (!local_file)
+        {
+          fprintf(stderr, "Error opening file %s\n", info->path);
+          return 0;
+        }
+      fseek(local_file, 0, SEEK_END);
+      *mem_size = ftell(local_file);
+      *data = (char *) malloc(sizeof(char) * (*mem_size));
+      if (!(*data))
+        {
+          fprintf(stderr, "Error allocating memory for file.\n");
+          return 0;
+        }
+      rewind(local_file);
+      int result = fread((*data), sizeof(char), *mem_size, local_file);
+      if (result != *mem_size)
+        {
+          fprintf(stderr, "Error reading file %s\n", info->path);
+          free(*data);
+          *data = NULL;
+          fclose(local_file);
+          return 0;
+        }
+      fclose(local_file);
       return 1;
     }
   else
@@ -187,6 +214,27 @@ int write_to_ssh(ssh_path_info *info, const char *data, size_t mem_size)
     }
   if (info->on_lhost)
     {
+      FILE *local_file;
+      local_file = fopen(info->path, "wb");
+      if (!local_file)
+        {
+          fprintf(stderr, "Error opening file %s\n", info->path);
+          return 0;
+        }
+      for (size_t write_pos = 0; write_pos < mem_size; write_pos += FILE_WRITE_SIZE)
+        {
+          size_t write_size = (mem_size - write_pos >= FILE_WRITE_SIZE) ? FILE_WRITE_SIZE : (mem_size - write_pos);
+          size_t result = fwrite(data + write_pos, sizeof(char), write_size, local_file);
+          if (result != write_size)
+            {
+              fprintf(stderr, "Error writing to file %s\n", info->path);
+              fclose(local_file);
+              local_file = NULL;
+              return 0;
+            }
+        }
+      fclose(local_file);
+      local_file = NULL;
       return 1;
     }
   else
@@ -316,8 +364,19 @@ int parse_ssh_path(const char *ssh_path, ssh_path_info *info)
   return 1;
 }
 
-int gscp(ssh_path_info *source, ssh_path_info *info)
+int gscp(ssh_path_info *source, ssh_path_info *dest)
 {
+  char *file_data;
+  size_t mem_size;
+  int result;
+  result = read_from_ssh(source, &file_data, &mem_size);
+  if (!result)
+    return 0;
+
+  result = write_to_ssh(dest, file_data, mem_size);
+  if (!result)
+    return 0;
+
   return 1;
 }
 
@@ -329,7 +388,7 @@ int is_valid_ssh_path(ssh_path_info *info)
   if (info->path == NULL)
     return 0;
 
-  if (!is_valid_ssh_connection(info->con))
+  if (!info->on_lhost && !is_valid_ssh_connection(info->con))
     return 0;
 
   return 1;
@@ -383,4 +442,33 @@ void ssh_connection_free(ssh_connection *con)
   free(con->username);
   free(con->password);
   free(con);
+}
+
+int get_ssh_path_info_from_user(ssh_path_info *info)
+{
+  char string_input[1024];
+  int max_input_len;
+  char input_char;
+  printf("Is this file on the local machine?\n");
+  scanf("%c", &input_char);
+  if (input_char == 'y' || input_char == 'Y')
+    {
+      info->on_lhost = 1;
+    }
+  else
+    {
+      info->on_lhost = 0;
+      printf("What's the ip address?\n");
+      fgets(string_input, max_input_len, stdin);
+      info->con->hostaddr = inet_addr(string_input);
+      printf("What's the port?\n");
+      int port_input;
+      scanf("%i", &port_input);
+      info->con->port = port_input;
+      info->con->auth_pw = 1;
+      printf("What's the username?\n");
+      fgets(string_input, max_input_len, stdin);
+      info->con->username = string_input;
+      printf("What's the password?\n");
+      fgets(string_input, max_input_len, stdin);
 }
