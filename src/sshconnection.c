@@ -78,16 +78,16 @@ int read_from_ssh(ssh_path_info *info, char **data, size_t *mem_size)
         {
           return 0;
         }
-/*#ifdef WIN32*/
+      /*#ifdef WIN32*/
       /*WSADATA wsadata;*/
       /*int err;*/
 
       /*err = WSAStartup(MAKEWORD(2,0), &wsadata);*/
       /*if (err != 0) {*/
-          /*fprintf(stderr, "WSAStartup failed with error: %d\n", err);*/
-          /*return 0;*/
+      /*fprintf(stderr, "WSAStartup failed with error: %d\n", err);*/
+      /*return 0;*/
       /*}*/
-/*#endif*/
+      /*#endif*/
 
       /*[> Right now I'm assuming that libssh2 has been init with libssh2_init(0).  <]*/
 
@@ -98,22 +98,22 @@ int read_from_ssh(ssh_path_info *info, char **data, size_t *mem_size)
       /*sin.sin_addr.s_addr = info->con->hostaddr;*/
       /*[>sin.sin_addr.s_addr = inet_addr("127.0.0.1");<]*/
       /*if (connect(sock, (struct sockaddr*)(&sin), sizeof(struct sockaddr_in)) != 0)*/
-        /*{*/
-          /*fprintf(stderr, "failed to connect!\n");*/
-          /*return 0;*/
-        /*}*/
+      /*{*/
+      /*fprintf(stderr, "failed to connect!\n");*/
+      /*return 0;*/
+      /*}*/
 
       /*LIBSSH2_SESSION *session = libssh2_session_init();*/
       /*if (!session)*/
-        /*return 0;*/
+      /*return 0;*/
 
       /*result = libssh2_session_handshake(session, sock);*/
       /*if (result)*/
-        /*{*/
-          /*fprintf(stderr, "Failure establishing SSH session: %d\n", result);*/
-          /*close_socket(sock);*/
-          /*return 0;*/
-        /*}*/
+      /*{*/
+      /*fprintf(stderr, "Failure establishing SSH session: %d\n", result);*/
+      /*close_socket(sock);*/
+      /*return 0;*/
+      /*}*/
       /*const char *finger_temp;*/
       /*finger_temp = libssh2_hostkey_hash(session, LIBSSH2_HOSTKEY_HASH_SHA1);*/
       /*[> Check to see if it's NULL.  <]*/
@@ -123,25 +123,26 @@ int read_from_ssh(ssh_path_info *info, char **data, size_t *mem_size)
 
       /*int auth_success = libssh2_userauth_password(session, info->con->username, info->con->password);*/
       /*if (auth_success)*/
-        /*{*/
-          /*fprintf(stderr, "Authentication by password failed.\n");*/
-          /*libssh2_session_disconnect(session,*/
-                                     /*"Error: Failure authenticating.");*/
-          /*libssh2_session_free(session);*/
-          /*close_socket(sock);*/
-          /*return 0;*/
-        /*}*/
+      /*{*/
+      /*fprintf(stderr, "Authentication by password failed.\n");*/
+      /*libssh2_session_disconnect(session,*/
+      /*"Error: Failure authenticating.");*/
+      /*libssh2_session_free(session);*/
+      /*close_socket(sock);*/
+      /*return 0;*/
+      /*}*/
       LIBSSH2_CHANNEL *channel;
       libssh2_struct_stat fileinfo;
       channel = libssh2_scp_recv2(session, info->path, &fileinfo);
 
       if (!channel)
         {
-          fprintf(stderr, "unable to open a session: %d\n",
+          fprintf(stderr, "unable to open a channel: %d\n",
                   libssh2_session_last_errno(session));
-          libssh2_session_disconnect(session, "Error: Couldn't open channel.");
-          libssh2_session_free(session);
-          close_socket(sock);
+          /*libssh2_session_disconnect(session, "Error: Couldn't open channel.");*/
+          /*libssh2_session_free(session);*/
+          /*close_socket(sock);*/
+          ssh_connection_session_close(&session, sock, "Error: Couldn't open channel.");
           return(0);
         }
 
@@ -168,10 +169,11 @@ int read_from_ssh(ssh_path_info *info, char **data, size_t *mem_size)
                   if (!*data)
                     {
                       libssh2_channel_free(channel);
-                      libssh2_session_disconnect(session,
-                                                 "Error: Failed to allocate data.");
-                      libssh2_session_free(session);
-                      close_socket(sock);
+                      /*libssh2_session_disconnect(session,*/
+                      /*"Error: Failed to allocate data.");*/
+                      /*libssh2_session_free(session);*/
+                      /*close_socket(sock);*/
+                      ssh_connection_session_close(&session, sock, "Error, failed to allocate data");
                       return 0;
                     }
                 }
@@ -182,10 +184,11 @@ int read_from_ssh(ssh_path_info *info, char **data, size_t *mem_size)
                       free(*data);
                       *data = NULL;
                       libssh2_channel_free(channel);
-                      libssh2_session_disconnect(session,
-                                                 "Error: Failed to allocate data.");
-                      libssh2_session_free(session);
-                      close_socket(sock);
+                      /*libssh2_session_disconnect(session,*/
+                      /*"Error: Failed to allocate data.");*/
+                      /*libssh2_session_free(session);*/
+                      /*close_socket(sock);*/
+                      ssh_connection_session_close(&session, sock, "Error, failed to allocate data");
                       return 0;
                     }
                 }
@@ -197,9 +200,10 @@ int read_from_ssh(ssh_path_info *info, char **data, size_t *mem_size)
               *data = NULL;
               fprintf(stderr, "libssh2_channel_read() failed: %d\n", result);
               libssh2_channel_free(channel);
-              libssh2_session_disconnect(session, "Error");
-              libssh2_session_free(session);
-              close_socket(sock);
+              /*libssh2_session_disconnect(session, "Error");*/
+              /*libssh2_session_free(session);*/
+              /*close_socket(sock);*/
+              ssh_connection_session_close(&session, sock, "Error");
               return 0;
             }
           got += bytes_read;
@@ -248,70 +252,74 @@ int write_to_ssh(ssh_path_info *info, const char *data, size_t mem_size)
   else
     {
       int result;
-#ifdef WIN32
-      WSADATA wsadata;
-      int err;
+      int sock;
+      LIBSSH2_SESSION *session;
+      result = ssh_connection_session_open(info->con, &sock, &session);
+      /*#ifdef WIN32*/
+      /*WSADATA wsadata;*/
+      /*int err;*/
 
-      err = WSAStartup(MAKEWORD(2,0), &wsadata);
-      if (err != 0) {
-          fprintf(stderr, "WSAStartup failed with error: %d\n", err);
-          return 0;
-      }
-#endif
-      int sock = socket(AF_INET, SOCK_STREAM, 0);
-      struct sockaddr_in sin;
-      sin.sin_family = AF_INET;
-      sin.sin_port = htons(info->con->port);
-      sin.sin_addr.s_addr = info->con->hostaddr;
-      if (connect(sock, (struct sockaddr*)(&sin), sizeof(struct sockaddr_in)) != 0)
-        {
-          fprintf(stderr, "failed to connect!\n");
-          return 0;
-        }
-      LIBSSH2_SESSION *session = libssh2_session_init();
-      if (!session)
-        {
-          return 0;
-        }
+      /*err = WSAStartup(MAKEWORD(2,0), &wsadata);*/
+      /*if (err != 0) {*/
+      /*fprintf(stderr, "WSAStartup failed with error: %d\n", err);*/
+      /*return 0;*/
+      /*}*/
+      /*#endif*/
+      /*int sock = socket(AF_INET, SOCK_STREAM, 0);*/
+      /*struct sockaddr_in sin;*/
+      /*sin.sin_family = AF_INET;*/
+      /*sin.sin_port = htons(info->con->port);*/
+      /*sin.sin_addr.s_addr = info->con->hostaddr;*/
+      /*if (connect(sock, (struct sockaddr*)(&sin), sizeof(struct sockaddr_in)) != 0)*/
+      /*{*/
+      /*fprintf(stderr, "failed to connect!\n");*/
+      /*return 0;*/
+      /*}*/
+      /*LIBSSH2_SESSION *session = libssh2_session_init();*/
+      /*if (!session)*/
+      /*{*/
+      /*return 0;*/
+      /*}*/
 
-      result = libssh2_session_handshake(session, sock);
-      if (result)
-        {
-          fprintf(stderr, "Failure establishing SSH session: %d\n", result);
-          close_socket(sock);
-          return 0;
-        }
-      const char *finger_temp;
-      finger_temp = libssh2_hostkey_hash(session, LIBSSH2_HOSTKEY_HASH_SHA1);
-      int auth_success = libssh2_userauth_password(session, info->con->username, info->con->password);
-      if (auth_success)
-        {
-          fprintf(stderr, "Authentication by password failed.\n");
-          libssh2_session_disconnect(session,
-                                     "Error: Failure authenticating.");
-          libssh2_session_free(session);
-          close_socket(sock);
-          return 0;
-        }
+      /*result = libssh2_session_handshake(session, sock);*/
+      /*if (result)*/
+      /*{*/
+      /*fprintf(stderr, "Failure establishing SSH session: %d\n", result);*/
+      /*close_socket(sock);*/
+      /*return 0;*/
+      /*}*/
+      /*const char *finger_temp;*/
+      /*finger_temp = libssh2_hostkey_hash(session, LIBSSH2_HOSTKEY_HASH_SHA1);*/
+      /*int auth_success = libssh2_userauth_password(session, info->con->username, info->con->password);*/
+      /*if (auth_success)*/
+      /*{*/
+      /*fprintf(stderr, "Authentication by password failed.\n");*/
+      /*libssh2_session_disconnect(session,*/
+      /*"Error: Failure authenticating.");*/
+      /*libssh2_session_free(session);*/
+      /*close_socket(sock);*/
+      /*return 0;*/
+      /*}*/
       LIBSSH2_CHANNEL *channel;
       libssh2_struct_stat fileinfo;
       /*channel = libssh2_scp_send64(session, info->path, fileinfo.st_mode & 0777,*/
-                                   /*(unsigned long)fileinfo.st_size, 0, 0);*/
+      /*(unsigned long)fileinfo.st_size, 0, 0);*/
       channel = libssh2_scp_send64(session, info->path, 0777,
                                    mem_size, 0, 0);
       /*channel = libssh2_scp_send(session, info->path, fileinfo.st_mode & 0777,*/
-                                   /*(unsigned long)fileinfo.st_size);*/
+      /*(unsigned long)fileinfo.st_size);*/
       /*channel = libssh2_scp_send(session, info->path, fileinfo.st_mode & 0777,*/
-                                   /*(unsigned long)fileinfo.st_size);*/
+      /*(unsigned long)fileinfo.st_size);*/
       if (!channel)
         {
           char *errmsg;
           int errlen;
           int err = libssh2_session_last_error(session, &errmsg, &errlen, 0);
           fprintf(stderr, "Unable to open a session: (%d) %s\n", err, errmsg);
-          libssh2_session_disconnect(session, "Error");
-          libssh2_session_free(session);
-          close_socket(sock);
+          /*libssh2_session_disconnect(session, "Error");*/
+          /*libssh2_session_free(session);*/
+          /*close_socket(sock);*/
+          ssh_connection_session_close(&session, sock, "Error, unable to open a session");
         }
       size_t current_pos = 0;
       size_t write_size;
@@ -319,7 +327,7 @@ int write_to_ssh(ssh_path_info *info, const char *data, size_t mem_size)
       do
         {
           write_size = ((mem_size - current_pos >= SSH_WRITE_SIZE) ? SSH_WRITE_SIZE
-                                                                   : (mem_size - current_pos));
+                        : (mem_size - current_pos));
           printf("%zu\n", write_size);
           bytes_written = libssh2_channel_write(channel, data + current_pos, write_size);
           printf("%zu bytes written.\n", bytes_written);
@@ -327,20 +335,22 @@ int write_to_ssh(ssh_path_info *info, const char *data, size_t mem_size)
             {
               printf("Error sending data.\n");
 
-              fprintf(stderr, "Sending EOF\n");
-              libssh2_channel_send_eof(channel);
+              /*fprintf(stderr, "Sending EOF\n");*/
+              /*libssh2_channel_send_eof(channel);*/
 
-              fprintf(stderr, "Waiting for EOF\n");
-              libssh2_channel_wait_eof(channel);
+              /*fprintf(stderr, "Waiting for EOF\n");*/
+              /*libssh2_channel_wait_eof(channel);*/
+              ssh_channel_send_send_eof(channel);
 
               fprintf(stderr, "Waiting for channel to close\n");
               libssh2_channel_wait_closed(channel);
 
               libssh2_channel_free(channel);
               channel = NULL;
-              libssh2_session_disconnect(session, "Error");
-              libssh2_session_free(session);
-              close_socket(sock);
+              /*libssh2_session_disconnect(session, "Error");*/
+              /*libssh2_session_free(session);*/
+              /*close_socket(sock);*/
+              ssh_connection_session_close(&session, sock, "Error");
               return 0;
             }
           current_pos += bytes_written;
@@ -348,21 +358,23 @@ int write_to_ssh(ssh_path_info *info, const char *data, size_t mem_size)
       while (current_pos < mem_size);
       printf("Done Writing");
 
-      fprintf(stderr, "Sending EOF\n");
-      libssh2_channel_send_eof(channel);
+      /*fprintf(stderr, "Sending EOF\n");*/
+      /*libssh2_channel_send_eof(channel);*/
 
-      fprintf(stderr, "Waiting for EOF\n");
-      libssh2_channel_wait_eof(channel);
+      /*fprintf(stderr, "Waiting for EOF\n");*/
+      /*libssh2_channel_wait_eof(channel);*/
 
-      fprintf(stderr, "Waiting for channel to close\n");
-      libssh2_channel_wait_closed(channel);
+      /*fprintf(stderr, "Waiting for channel to close\n");*/
+      /*libssh2_channel_wait_closed(channel);*/
+      ssh_channel_send_send_eof(channel);
 
       libssh2_channel_free(channel);
       channel = NULL;
-      libssh2_session_disconnect(session, "Shutting Down");
-      libssh2_session_free(session);
-      close_socket(sock);
-      
+      /*libssh2_session_disconnect(session, "Shutting Down");*/
+      /*libssh2_session_free(session);*/
+      /*close_socket(sock);*/
+      ssh_connection_session_close(&session, sock, "Shutting down");
+
       return 1;
     }
 }
@@ -372,21 +384,274 @@ int parse_ssh_path(const char *ssh_path, ssh_path_info *info)
   return 1;
 }
 
-int gscp(ssh_path_info *source, ssh_path_info *dest)
+int gscp(ssh_path_info *src, ssh_path_info *dest)
 {
-  
   /*char *file_data;*/
   /*size_t mem_size;*/
   /*int result;*/
   /*result = read_from_ssh(source, &file_data, &mem_size);*/
   /*if (!result)*/
-    /*return 0;*/
+  /*return 0;*/
 
   /*result = write_to_ssh(dest, file_data, mem_size);*/
   /*if (!result)*/
-    /*return 0;*/
+  /*return 0;*/
 
   /*return 1;*/
+  if (!is_valid_ssh_path(src) || !is_valid_ssh_path(dest))
+    {
+      fprintf(stderr, "Error, invalid ssh path\n");
+      return 0;
+    }
+
+  char *mem_buf;
+  size_t mem_size;
+  size_t read_pos = 0;
+  size_t write_pos = 0;
+  libssh2_struct_stat_size read_file_size;
+  size_t mem_read; /* Note, this is read as "red" because it's past tense.  */
+
+  /* Either the ssh or file objects are used based on whether or not it's local.  */
+  LIBSSH2_SESSION *read_session;
+  LIBSSH2_CHANNEL *read_channel;
+  int read_sock;
+  LIBSSH2_SESSION *write_session;
+  LIBSSH2_CHANNEL *write_channel;
+  int write_sock;
+  FILE *read_file;
+  FILE *write_file;
+
+  size_t read_size;
+  size_t write_size;
+  if (src->on_lhost)
+    read_size = FILE_READ_SIZE;
+  else
+    read_size = SSH_READ_SIZE;
+  if (dest->on_lhost)
+    write_size = FILE_WRITE_SIZE;
+  else
+    write_size = SSH_WRITE_SIZE;
+
+  mem_size = (read_size > write_size) ? read_size : write_size;
+
+  mem_buf = (char *) malloc(sizeof(char) * (mem_size));
+  if (!mem_buf)
+    {
+      fprintf(stderr, "Error allocating memory buffer");
+      return 0;
+    }
+
+  if (src->on_lhost)
+    {
+      read_file = fopen(src->path, "rb");
+      if (!read_file)
+        {
+          fprintf(stderr, "Error opening file %s for reading\n", src->path);
+          free(mem_buf);
+          return 0;
+        }
+      fseek(read_file, 0, SEEK_END);
+      read_file_size = ftell(read_file);
+      fseek(read_file, 0, SEEK_SET);
+    }
+  else
+    {
+      int result = ssh_connection_session_open(src->con, &read_sock, &read_session);
+      if (!result)
+        {
+          free(mem_buf);
+          return 0;
+        }
+      libssh2_struct_stat fileinfo;
+      read_channel = libssh2_scp_recv2(read_session, src->path, &fileinfo);
+      if (!read_channel)
+        {
+          free(mem_buf);
+          fprintf(stderr, "Error opening remote file %s", src->path);
+          ssh_connection_session_close(&read_session, read_sock, "Error opening file for writing");
+          return 0;
+        }
+      read_file_size = fileinfo.st_size;
+    }
+  if (dest->on_lhost)
+    {
+      write_file = fopen(dest->path, "wb");
+      if (!write_file)
+        {
+          free(mem_buf);
+          fprintf(stderr, "Error opening file %s for writing\n", dest->path);
+          if (src->on_lhost)
+            {
+              fclose(read_file);
+              read_file = 0;
+            }
+          else
+            ssh_connection_session_close(&read_session, read_sock, "Error");
+          return 0;
+        }
+    }
+  else
+    {
+      int result = ssh_connection_session_open(dest->con, &write_sock, &write_session);
+      if (!result)
+        {
+          free(mem_buf);
+          if (src->on_lhost)
+            {
+              fclose(read_file);
+              read_file = 0;
+            }
+          else
+            {
+              libssh2_channel_free(read_channel);
+              ssh_connection_session_close(&read_session, read_sock, "Error");
+            }
+          return 0;
+        }
+      libssh2_struct_stat fileinfo;
+      read_channel = libssh2_scp_recv2(read_session, src->path, &fileinfo);
+      if (!read_channel)
+        {
+          fprintf(stderr, "Error opening remote file %s", src->path);
+          free(mem_buf);
+          if (src->on_lhost)
+            {
+              fclose(read_file);
+              read_file = 0;
+            }
+          else
+            {
+              libssh2_channel_free(read_channel);
+              ssh_connection_session_close(&read_session, read_sock, "Error");
+            }
+
+          ssh_connection_session_close(&write_session, write_sock, "Error opening file for writing");
+          return 0;
+        }
+    }
+
+  int result;
+  while (mem_read < read_file_size)
+    {
+      while (read_pos < mem_size)
+        {
+          /* find the minumum amount of bytes to install whether that be
+             the read size, the remaining bytes of the memory buffer, or
+             the remaining bytes to read in the file */
+          size_t remaining_bytes_buff = mem_size - read_pos;
+          size_t remaining_bytes_file = read_file_size - mem_read;
+          size_t bytes_to_read = (remaining_bytes_buff < read_size) ? remaining_bytes_buff : read_size;
+          bytes_to_read = (remaining_bytes_file < bytes_to_read) ? remaining_bytes_file : bytes_to_read;
+          int bytes_read;
+          if (src->on_lhost)
+            {
+              bytes_read = fread(mem_buf + read_pos, sizeof(char), bytes_to_read, read_file);
+            }
+          else
+            {
+              bytes_read = libssh2_channel_read(read_channel, mem_buf + read_pos, bytes_to_read);
+            }
+          if (bytes_read != bytes_to_read)
+            {
+              fprintf(stderr, "Error reading file\n");
+              free(mem_buf);
+              if (src->on_lhost)
+                {
+                  fclose(read_file);
+                  read_file = NULL;
+                }
+              else
+                {
+                  libssh2_channel_free(read_channel);
+                  ssh_connection_session_close(&read_session, read_sock, "Error");
+                }
+
+              if (dest->on_lhost)
+                {
+                  fclose(write_file);
+                  write_file = NULL;
+                }
+              else
+                {
+                  ssh_channel_send_send_eof(write_channel);
+                  libssh2_channel_free(write_channel);
+                  ssh_connection_session_close(&write_session, write_sock, "Error opening file for writing");
+                }
+              return 0;
+            }
+          read_pos += bytes_read;
+          mem_read += bytes_read;
+        }
+      while (write_pos < read_pos)
+        {
+          size_t remaining_bytes_buff = read_pos - write_pos;
+          size_t bytes_to_write = (remaining_bytes_buff < write_size) ? remaining_bytes_buff : write_size;
+          int bytes_written;
+          if (dest->on_lhost)
+            {
+              bytes_written = fwrite(mem_buf + write_pos, sizeof(char), bytes_to_write, write_file);
+            }
+          else
+            {
+              bytes_written = libssh2_channel_write(write_channel, mem_buf + write_pos, bytes_to_write);
+            }
+          if (bytes_written != bytes_to_write)
+            {
+              fprintf(stderr, "Error reading file\n");
+              free(mem_buf);
+              if (src->on_lhost)
+                {
+                  fclose(read_file);
+                  read_file = NULL;
+                }
+              else
+                {
+                  libssh2_channel_free(read_channel);
+                  ssh_connection_session_close(&read_session, read_sock, "Error");
+                }
+
+              if (dest->on_lhost)
+                {
+                  fclose(write_file);
+                  write_file = NULL;
+                }
+              else
+                {
+                  ssh_channel_send_send_eof(write_channel);
+                  libssh2_channel_free(write_channel);
+                  ssh_connection_session_close(&write_session, write_sock, "Error opening file for writing");
+                }
+              return 0;
+            }
+          write_pos += bytes_written;
+        }
+      read_pos = 0;
+      write_pos = 0;
+    }
+  free(mem_buf);
+  if (src->on_lhost)
+    {
+      fclose(read_file);
+      read_file = NULL;
+    }
+  else
+    {
+      libssh2_channel_free(read_channel);
+      ssh_connection_session_close(&read_session, read_sock, "Normal shutdown");
+    }
+
+  if (dest->on_lhost)
+    {
+      fclose(write_file);
+      write_file = NULL;
+    }
+  else
+    {
+      ssh_channel_send_send_eof(write_channel);
+      libssh2_channel_free(write_channel);
+      ssh_connection_session_close(&write_session, write_sock, "Error opening file for writing");
+    }
+  return 1;
 }
 
 int is_valid_ssh_path(ssh_path_info *info)
@@ -489,7 +754,7 @@ int get_ssh_path_info_from_user(ssh_path_info *info)
   printf("What's the path?\n");
   fgets(string_input, max_input_len, stdin);
   string_input[strchr(string_input, '\n') - string_input] = '\0';
-  
+
   return 0;
 }
 
@@ -513,8 +778,9 @@ int ssh_connection_session_open(ssh_connection *con, int *sock, LIBSSH2_SESSION 
   *sock = socket(AF_INET, SOCK_STREAM, 0);
   struct sockaddr_in sin;
   sin.sin_family = AF_INET;
-  sin.sin_port = con->port;
+  sin.sin_port = htons(con->port);
   sin.sin_addr.s_addr = con->hostaddr;
+  /*sin.sin_addr.s_addr = inet_addr("127.0.0.1");*/
   if (connect(*sock, (struct sockaddr *)(&sin), sizeof(struct sockaddr_in)) != 0)
     {
       fprintf(stderr, "Error, failed to connect to ip %i on port %i\n", con->hostaddr, con->port);
@@ -559,5 +825,13 @@ int ssh_connection_session_close(LIBSSH2_SESSION **session, int sock, const char
   libssh2_session_disconnect(*session, message);
   libssh2_session_free(*session);
   close_socket(sock);
+  return 1;
+}
+
+int ssh_channel_send_send_eof(LIBSSH2_CHANNEL *channel)
+{
+  libssh2_channel_send_eof(channel);
+  libssh2_channel_wait_eof(channel);
+  libssh2_channel_wait_closed(channel);
   return 1;
 }

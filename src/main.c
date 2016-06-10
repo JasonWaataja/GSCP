@@ -74,7 +74,8 @@ int main(int argc, char *argv[])
       inf.con = con;
       inf.on_lhost = 0;
       /*[>char path[] = "/home/jason/Music/Danny/rip.flac";<]*/
-      char path[] = "/home/jason/testfile2.txt";
+      /*char path[] = "/home/jason/testfile2.txt";*/
+      char path[] = "/home/jason/testfile.txt";
       inf.path = (char *) malloc(sizeof(path));
       strcpy(inf.path, path);
       char *data;

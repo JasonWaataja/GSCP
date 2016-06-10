@@ -10,7 +10,7 @@
 #define SSH_READ_SIZE 1024
 #define SSH_WRITE_SIZE 1024
 
-#define FILE_WRITE_SIZE 2048
+#define FILE_READ_SIZE 2048
 #define FILE_WRITE_SIZE 2048
 
 struct _ssh_connection
@@ -40,6 +40,7 @@ void ssh_connection_free(ssh_connection *con);
 
 int ssh_connection_session_open(ssh_connection *con, int *sock, LIBSSH2_SESSION **session);
 int ssh_connection_session_close(LIBSSH2_SESSION **session, int sock, const char *message);
+int ssh_channel_send_send_eof(LIBSSH2_CHANNEL *channel);
 
 int is_valid_ssh_path(ssh_path_info *info);
 int is_valid_ssh_connection(ssh_connection *con);
@@ -53,7 +54,7 @@ int write_to_ssh(ssh_path_info *info, const char *data, size_t mem_size);
 
 int parse_ssh_path(const char *ssh_path, ssh_path_info *info);
 
-int gscp(ssh_path_info *source, ssh_path_info *dest);
+int gscp(ssh_path_info *src, ssh_path_info *dest);
 
 int get_ssh_path_info_from_user(ssh_path_info *info);
 
