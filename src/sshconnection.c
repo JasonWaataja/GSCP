@@ -446,6 +446,7 @@ void ssh_connection_free(ssh_connection *con)
 
 int get_ssh_path_info_from_user(ssh_path_info *info)
 {
+  /* I just realized I'll have to do use ssh_connection_new.  */
   char string_input[1024];
   int max_input_len;
   char input_char;
@@ -460,6 +461,7 @@ int get_ssh_path_info_from_user(ssh_path_info *info)
       info->on_lhost = 0;
       printf("What's the ip address?\n");
       fgets(string_input, max_input_len, stdin);
+      string_input[strchr(string_input, '\n') - string_input] = '\0';
       info->con->hostaddr = inet_addr(string_input);
       printf("What's the port?\n");
       int port_input;
@@ -468,7 +470,15 @@ int get_ssh_path_info_from_user(ssh_path_info *info)
       info->con->auth_pw = 1;
       printf("What's the username?\n");
       fgets(string_input, max_input_len, stdin);
+      string_input[strchr(string_input, '\n') - string_input] = '\0';
       info->con->username = string_input;
       printf("What's the password?\n");
       fgets(string_input, max_input_len, stdin);
+      string_input[strchr(string_input, '\n') - string_input] = '\0';
+      info->con->password = string_input;
+    }
+  printf("What's the path?\n");
+  fgets(string_input, max_input_len, stdin);
+  string_input[strchr(string_input, '\n') - string_input] = '\0';
+  
 }
