@@ -409,7 +409,8 @@ int gscp(ssh_path_info *src, ssh_path_info *dest)
   size_t read_pos = 0;
   size_t write_pos = 0;
   libssh2_struct_stat_size read_file_size;
-  size_t mem_read; /* Note, this is read as "red" because it's past tense.  */
+  size_t mem_read = 0; /* Note, this is read as "red" because it's past tense.  */
+  size_t mem_written = 0;
 
   /* Either the ssh or file objects are used based on whether or not it's local.  */
   LIBSSH2_SESSION *read_session;
@@ -472,6 +473,7 @@ int gscp(ssh_path_info *src, ssh_path_info *dest)
           return 0;
         }
       read_file_size = fileinfo.st_size;
+      printf("fileinfo.st_size %ld\n", fileinfo.st_size);
     }
   if (dest->on_lhost)
     {
@@ -544,6 +546,7 @@ int gscp(ssh_path_info *src, ssh_path_info *dest)
           size_t remaining_bytes_file = read_file_size - mem_read;
           size_t bytes_to_read = (remaining_bytes_buff < read_size) ? remaining_bytes_buff : read_size;
           bytes_to_read = (remaining_bytes_file < bytes_to_read) ? remaining_bytes_file : bytes_to_read;
+          printf("bytes_to_read %zu\n", bytes_to_read);
           int bytes_read;
           if (src->on_lhost)
             {
@@ -585,10 +588,12 @@ int gscp(ssh_path_info *src, ssh_path_info *dest)
           mem_read += bytes_read;
         }
       printf("About to write\n");
-      while (write_pos < read_pos)
+      while (write_pos < read_pos && mem_written < read_file_size)
         {
           size_t remaining_bytes_buff = read_pos - write_pos;
+          size_t remaining_bytes_file = read_file_size - mem_written;
           size_t bytes_to_write = (remaining_bytes_buff < write_size) ? remaining_bytes_buff : write_size;
+          bytes_to_write = (remaining_bytes_file < bytes_to_write) ? remaining_bytes_file : bytes_to_write;
           int bytes_written;
           if (dest->on_lhost)
             {
@@ -600,7 +605,7 @@ int gscp(ssh_path_info *src, ssh_path_info *dest)
             }
           if (bytes_written != bytes_to_write)
             {
-              fprintf(stderr, "Error reading file\n");
+              fprintf(stderr, "Error writing to file\n");
               free(mem_buf);
               if (src->on_lhost)
                 {

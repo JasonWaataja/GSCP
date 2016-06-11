@@ -97,7 +97,7 @@ int main(int argc, char *argv[])
   ssh_path_info src;
   src.on_lhost = 1;
   src.path = "/home/jason/src.txt";
-  /*src.path = "/home/jason/Videos/Demonstration.mkv";*/
+  /*src.path = "/home/jason/Videos/DemonstrationCompressed.mkv";*/
   src.con = NULL;
   ssh_path_info dest;
   dest.on_lhost = 0;
@@ -111,7 +111,6 @@ int main(int argc, char *argv[])
   /*dest.con->hostaddr = inet_addr("127.0.0.1");*/
   dest.con->hostaddr = inet_addr("192.168.5.31");
   dest.con->port = 22;
-
   /*gscp(&src, &dest);*/
   gscp(&dest, &src);
 

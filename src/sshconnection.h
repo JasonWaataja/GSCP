@@ -7,11 +7,11 @@
 
 #define SSH_DEFAULT_PORT 22
 
-#define SSH_READ_SIZE 1024
-#define SSH_WRITE_SIZE 1024
+#define SSH_READ_SIZE 32000
+#define SSH_WRITE_SIZE 32000
 
-#define FILE_READ_SIZE 2048
-#define FILE_WRITE_SIZE 2048
+#define FILE_READ_SIZE 4000
+#define FILE_WRITE_SIZE 4000
 
 struct _ssh_connection
 {
