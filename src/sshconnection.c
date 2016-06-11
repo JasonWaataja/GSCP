@@ -508,9 +508,8 @@ int gscp(ssh_path_info *src, ssh_path_info *dest)
             }
           return 0;
         }
-      libssh2_struct_stat fileinfo;
-      read_channel = libssh2_scp_recv2(read_session, src->path, &fileinfo);
-      if (!read_channel)
+      write_channel = libssh2_scp_send64(write_session, dest->path, 0777, read_file_size, 0, 0);
+      if (!write_channel)
         {
           fprintf(stderr, "Error opening remote file %s", src->path);
           free(mem_buf);
@@ -531,10 +530,13 @@ int gscp(ssh_path_info *src, ssh_path_info *dest)
     }
 
   int result;
+  printf("read_file_size %lu\n", read_file_size);
   while (mem_read < read_file_size)
     {
-      while (read_pos < mem_size)
+      printf("About to read\n");
+      while (read_pos < mem_size && mem_read < read_file_size)
         {
+          /*printf("read_pos %zu\n", read_pos);*/
           /* find the minumum amount of bytes to install whether that be
              the read size, the remaining bytes of the memory buffer, or
              the remaining bytes to read in the file */
@@ -582,6 +584,7 @@ int gscp(ssh_path_info *src, ssh_path_info *dest)
           read_pos += bytes_read;
           mem_read += bytes_read;
         }
+      printf("About to write\n");
       while (write_pos < read_pos)
         {
           size_t remaining_bytes_buff = read_pos - write_pos;

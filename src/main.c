@@ -57,43 +57,65 @@ int main(int argc, char *argv[])
   /*printf("result %i\n", result);*/
   /*free(inf.path);*/
 
-  ssh_connection *con;
-  char password[256];
-  printf("Enter the password.\n");
-  fgets(password, sizeof(password), stdin);
-  size_t length = strlen(password);
-  char *nl_pos;
-  if ((nl_pos = strchr(password, '\n')))
-      *nl_pos = '\0';
-  con = ssh_connection_new("jason", password);
-  if (con)
-    {
-      con->auth_pw = 1;
-      con->hostaddr = inet_addr("127.0.0.1");
-      ssh_path_info inf;
-      inf.con = con;
-      inf.on_lhost = 0;
-      /*[>char path[] = "/home/jason/Music/Danny/rip.flac";<]*/
-      /*char path[] = "/home/jason/testfile2.txt";*/
-      char path[] = "/home/jason/testfile.txt";
-      inf.path = (char *) malloc(sizeof(path));
-      strcpy(inf.path, path);
-      char *data;
-      size_t mem_size;
-      /*char string_to_write[] = "Hello scp";*/
-      /*mem_size = strlen(string_to_write);*/
-      /*write_to_ssh(&inf, string_to_write, mem_size);*/
-      read_from_ssh(&inf, &data, &mem_size);
-      for (int i = 0; i < mem_size; i++)
-        {
-          putchar(data[i]);
-        }
-      putchar('\n');
-      free(data);
-      free(inf.path);
-    }
-  ssh_connection_free(con);
+  /*ssh_connection *con;*/
+  /*char password[256];*/
+  /*printf("Enter the password.\n");*/
+  /*fgets(password, sizeof(password), stdin);*/
+  /*size_t length = strlen(password);*/
+  /*char *nl_pos;*/
+  /*if ((nl_pos = strchr(password, '\n')))*/
+      /**nl_pos = '\0';*/
+  /*con = ssh_connection_new("jason", password);*/
+  /*if (con)*/
+    /*{*/
+      /*con->auth_pw = 1;*/
+      /*con->hostaddr = inet_addr("127.0.0.1");*/
+      /*ssh_path_info inf;*/
+      /*inf.con = con;*/
+      /*inf.on_lhost = 0;*/
+      /*[>[>char path[] = "/home/jason/Music/Danny/rip.flac";<]<]*/
+      /*[>char path[] = "/home/jason/testfile2.txt";<]*/
+      /*char path[] = "/home/jason/testfile.txt";*/
+      /*inf.path = (char *) malloc(sizeof(path));*/
+      /*strcpy(inf.path, path);*/
+      /*char *data;*/
+      /*size_t mem_size;*/
+      /*[>char string_to_write[] = "Hello scp";<]*/
+      /*[>mem_size = strlen(string_to_write);<]*/
+      /*[>write_to_ssh(&inf, string_to_write, mem_size);<]*/
+      /*read_from_ssh(&inf, &data, &mem_size);*/
+      /*for (int i = 0; i < mem_size; i++)*/
+        /*{*/
+          /*putchar(data[i]);*/
+        /*}*/
+      /*putchar('\n');*/
+      /*free(data);*/
+      /*free(inf.path);*/
+    /*}*/
+  /*ssh_connection_free(con);*/
 
+  ssh_path_info src;
+  src.on_lhost = 1;
+  src.path = "/home/jason/src.txt";
+  /*src.path = "/home/jason/Videos/Demonstration.mkv";*/
+  src.con = NULL;
+  ssh_path_info dest;
+  dest.on_lhost = 0;
+  dest.path = "/home/jason/dest.txt";
+  char password[1024];
+  printf("What's the password?\n");
+  fgets(password, sizeof(password), stdin);
+  *(strchr(password, '\n')) = '\0';
+  dest.con = ssh_connection_new("jason", password);
+  dest.con->auth_pw = 1;
+  /*dest.con->hostaddr = inet_addr("127.0.0.1");*/
+  dest.con->hostaddr = inet_addr("192.168.5.31");
+  dest.con->port = 22;
+
+  /*gscp(&src, &dest);*/
+  gscp(&dest, &src);
+
+  ssh_connection_free(dest.con);
 
   libssh2_exit();
 
