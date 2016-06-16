@@ -28,6 +28,8 @@
 #include <stdio.h>
 #include <ctype.h>
 
+#include <gtk/gtk.h>
+
 int read_from_ssh(ssh_path_info *info, char **data, size_t *mem_size)
 {
   *data = NULL;
@@ -328,12 +330,12 @@ int write_to_ssh(ssh_path_info *info, const char *data, size_t mem_size)
         {
           write_size = ((mem_size - current_pos >= SSH_WRITE_SIZE) ? SSH_WRITE_SIZE
                         : (mem_size - current_pos));
-          printf("%zu\n", write_size);
+          /*printf("%zu\n", write_size);*/
           bytes_written = libssh2_channel_write(channel, data + current_pos, write_size);
-          printf("%zu bytes written.\n", bytes_written);
+          /*printf("%zu bytes written.\n", bytes_written);*/
           if (bytes_written < 0)
             {
-              printf("Error sending data.\n");
+              fprintf(stderr, "Error sending data.\n");
 
               /*fprintf(stderr, "Sending EOF\n");*/
               /*libssh2_channel_send_eof(channel);*/
@@ -356,7 +358,7 @@ int write_to_ssh(ssh_path_info *info, const char *data, size_t mem_size)
           current_pos += bytes_written;
         }
       while (current_pos < mem_size);
-      printf("Done Writing");
+      /*printf("Done Writing");*/
 
       /*fprintf(stderr, "Sending EOF\n");*/
       /*libssh2_channel_send_eof(channel);*/
@@ -384,7 +386,7 @@ int parse_ssh_path(const char *ssh_path, ssh_path_info *info)
   return 1;
 }
 
-int gscp(ssh_path_info *src, ssh_path_info *dest)
+int gscp(ssh_path_info *src, ssh_path_info *dest, GtkProgressBar *progress_bar)
 {
   /*char *file_data;*/
   /*size_t mem_size;*/
@@ -402,6 +404,11 @@ int gscp(ssh_path_info *src, ssh_path_info *dest)
     {
       fprintf(stderr, "Error, invalid ssh path\n");
       return 0;
+    }
+
+  if (progress_bar)
+    {
+      gtk_widget_set_visible(GTK_WIDGET(progress_bar), TRUE);
     }
 
   char *mem_buf;
@@ -473,7 +480,7 @@ int gscp(ssh_path_info *src, ssh_path_info *dest)
           return 0;
         }
       read_file_size = fileinfo.st_size;
-      printf("fileinfo.st_size %ld\n", fileinfo.st_size);
+      /*printf("fileinfo.st_size %ld\n", fileinfo.st_size);*/
     }
   if (dest->on_lhost)
     {
@@ -532,10 +539,10 @@ int gscp(ssh_path_info *src, ssh_path_info *dest)
     }
 
   int result;
-  printf("read_file_size %lu\n", read_file_size);
+  /*printf("read_file_size %lu\n", read_file_size);*/
   while (mem_read < read_file_size)
     {
-      printf("About to read\n");
+      /*printf("About to read\n");*/
       while (read_pos < mem_size && mem_read < read_file_size)
         {
           /*printf("read_pos %zu\n", read_pos);*/
@@ -546,7 +553,7 @@ int gscp(ssh_path_info *src, ssh_path_info *dest)
           size_t remaining_bytes_file = read_file_size - mem_read;
           size_t bytes_to_read = (remaining_bytes_buff < read_size) ? remaining_bytes_buff : read_size;
           bytes_to_read = (remaining_bytes_file < bytes_to_read) ? remaining_bytes_file : bytes_to_read;
-          printf("bytes_to_read %zu\n", bytes_to_read);
+          /*printf("bytes_to_read %zu\n", bytes_to_read);*/
           int bytes_read;
           if (src->on_lhost)
             {
@@ -587,7 +594,7 @@ int gscp(ssh_path_info *src, ssh_path_info *dest)
           read_pos += bytes_read;
           mem_read += bytes_read;
         }
-      printf("About to write\n");
+      /*printf("About to write\n");*/
       while (write_pos < read_pos && mem_written < read_file_size)
         {
           size_t remaining_bytes_buff = read_pos - write_pos;
@@ -632,6 +639,13 @@ int gscp(ssh_path_info *src, ssh_path_info *dest)
               return 0;
             }
           write_pos += bytes_written;
+          mem_written += bytes_written;
+          if (progress_bar)
+            {
+              double progress_fraction = (double) mem_written / read_file_size;
+              printf("mem written %zu read file size %zu fraction %f\n", mem_written, read_file_size, progress_fraction);
+              gtk_progress_bar_set_fraction(progress_bar, progress_fraction);
+            }
         }
       read_pos = 0;
       write_pos = 0;
@@ -721,8 +735,11 @@ ssh_connection *ssh_connection_new(const char *username, const char *password)
 
 void ssh_connection_free(ssh_connection *con)
 {
-  free(con->username);
-  free(con->password);
+  if (con != NULL)
+    {
+      free(con->username);
+      free(con->password);
+    }
   free(con);
 }
 

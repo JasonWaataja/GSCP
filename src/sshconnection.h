@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <libssh2.h>
+#include <gtk/gtk.h>
 
 #define SSH_DEFAULT_PORT 22
 
@@ -54,7 +55,7 @@ int write_to_ssh(ssh_path_info *info, const char *data, size_t mem_size);
 
 int parse_ssh_path(const char *ssh_path, ssh_path_info *info);
 
-int gscp(ssh_path_info *src, ssh_path_info *dest);
+int gscp(ssh_path_info *src, ssh_path_info *dest, GtkProgressBar *progress_bar);
 
 int get_ssh_path_info_from_user(ssh_path_info *info);
 
