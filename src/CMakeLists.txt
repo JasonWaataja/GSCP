@@ -2,7 +2,8 @@ cmake_minimum_required(VERSION 3.0)
 #project(GSCP)
 
 file(GLOB SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/*.c)
-add_executable(gscp ${SOURCES} resources.c)
+#add_executable(gscp ${SOURCES} resources.c)
+add_executable(gscp ${SOURCES})
 
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(GTK3 REQUIRED gtk+-3.0)
@@ -19,10 +20,10 @@ target_link_libraries(gscp ${GTK3_LIBRARIES})
 
 #for glib compile I think
 
-add_custom_command(TARGET gscp
-  PRE_BUILD
-  COMMAND sh -c '`pkg-config --variable=glib_compile_resources gio-2.0` gscp.gresource.xml --target=resources.c --sourcedir=. --generate-source'
-  )
+#add_custom_command(TARGET gscp
+  #PRE_BUILD
+  #COMMAND sh -c '`pkg-config --variable=glib_compile_resources gio-2.0` gscp.gresource.xml --target=resources.c --sourcedir=. --generate-source'
+  #)
 
 #include_directories(${PROJECT_SOURCE_DIR}/libssh2/include)
 #add_subdirectory(${PROJECT_SOURCE_DIR}/libssh2)

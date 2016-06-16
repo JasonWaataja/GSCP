@@ -57,36 +57,6 @@ ssh_path_info *dest_path_info;
 ssh_connection *src_con;
 ssh_connection *dest_con;
 
-// Function to open a dialog box with a message
-void
-quick_message (GtkWindow *parent, gchar *message)
-{
-  GtkWidget *dialog, *label, *content_area;
-  GtkDialogFlags flags;
-
-  // Create the widgets
-  flags = GTK_DIALOG_DESTROY_WITH_PARENT;
-  dialog = gtk_dialog_new_with_buttons ("Message",
-                                        parent,
-                                        flags,
-                                        "OK",
-                                        GTK_RESPONSE_NONE,
-                                        NULL);
-  content_area = gtk_dialog_get_content_area (GTK_DIALOG (dialog));
-  label = gtk_label_new (message);
-
-  // Ensure that the dialog box is destroyed when the user responds
-
-  g_signal_connect_swapped (dialog,
-                            "response",
-                            G_CALLBACK (gtk_widget_destroy),
-                            dialog);
-
-  // Add the label, and show everything we’ve added
-
-  gtk_container_add (GTK_CONTAINER (content_area), label);
-  gtk_widget_show_all (dialog);
-}
 
 static void
 start_transfer()
@@ -123,7 +93,7 @@ start_transfer()
     }
 
   int result;
-  result = gscp(src_path_info, dest_path_info, GTK_PROGRESS_BAR(progress_bar));
+  result = gscp(src_path_info, dest_path_info, GTK_PROGRESS_BAR(progress_bar), 1, GTK_WINDOW(window));
 }
 
 static void
@@ -269,98 +239,21 @@ app_shutdown(GApplication *application,
          gpointer      user_data)
 {
   free(src_path_info->path);
+  src_path_info->path = NULL;
   free(src_path_info);
+  src_path_info = NULL;
   ssh_connection_free(src_con);
+  src_con = NULL;
   free(dest_path_info->path);
+  dest_path_info->path = NULL;
   free(dest_path_info);
+  dest_path_info = NULL;
   ssh_connection_free(dest_con);
+  dest_con = NULL;
 }
 
 int main(int argc, char *argv[])
 {
-  /*libssh2_init(0);*/
-
-  /*ssh_path_info inf;*/
-  /*inf.on_lhost = 1;*/
-  /*char path[] = "/home/jason/testfile.txt";*/
-  /*inf.path = malloc(sizeof(path));*/
-  /*strcpy(inf.path, path);*/
-  /*inf.con = NULL;*/
-
-  /*char *data;*/
-  /*size_t mem_size;*/
-  /*int result;*/
-  /*[>result = read_from_ssh(&inf, &data, &mem_size);<]*/
-  /*[>if (result)<]*/
-    /*[>{<]*/
-      /*[>for (int i = 0; i < mem_size; i++)<]*/
-        /*[>putchar(data[i]);<]*/
-    /*[>}<]*/
-  /*char string_to_write[] = "Hello file";*/
-  /*result = write_to_ssh(&inf, string_to_write, strlen(string_to_write));*/
-  /*printf("result %i\n", result);*/
-  /*free(inf.path);*/
-
-  /*ssh_connection *con;*/
-  /*char password[256];*/
-  /*printf("Enter the password.\n");*/
-  /*fgets(password, sizeof(password), stdin);*/
-  /*size_t length = strlen(password);*/
-  /*char *nl_pos;*/
-  /*if ((nl_pos = strchr(password, '\n')))*/
-      /**nl_pos = '\0';*/
-  /*con = ssh_connection_new("jason", password);*/
-  /*if (con)*/
-    /*{*/
-      /*con->auth_pw = 1;*/
-      /*con->hostaddr = inet_addr("127.0.0.1");*/
-      /*ssh_path_info inf;*/
-      /*inf.con = con;*/
-      /*inf.on_lhost = 0;*/
-      /*[>[>char path[] = "/home/jason/Music/Danny/rip.flac";<]<]*/
-      /*[>char path[] = "/home/jason/testfile2.txt";<]*/
-      /*char path[] = "/home/jason/testfile.txt";*/
-      /*inf.path = (char *) malloc(sizeof(path));*/
-      /*strcpy(inf.path, path);*/
-      /*char *data;*/
-      /*size_t mem_size;*/
-      /*[>char string_to_write[] = "Hello scp";<]*/
-      /*[>mem_size = strlen(string_to_write);<]*/
-      /*[>write_to_ssh(&inf, string_to_write, mem_size);<]*/
-      /*read_from_ssh(&inf, &data, &mem_size);*/
-      /*for (int i = 0; i < mem_size; i++)*/
-        /*{*/
-          /*putchar(data[i]);*/
-        /*}*/
-      /*putchar('\n');*/
-      /*free(data);*/
-      /*free(inf.path);*/
-    /*}*/
-  /*ssh_connection_free(con);*/
-
-  /*ssh_path_info src;*/
-  /*src.on_lhost = 1;*/
-  /*src.path = "/home/jason/src.txt";*/
-  /*[>src.path = "/home/jason/Videos/DemonstrationCompressed.mkv";<]*/
-  /*src.con = NULL;*/
-  /*ssh_path_info dest;*/
-  /*dest.on_lhost = 0;*/
-  /*dest.path = "/home/jason/dest.txt";*/
-  /*char password[1024];*/
-  /*printf("What's the password?\n");*/
-  /*fgets(password, sizeof(password), stdin);*/
-  /**(strchr(password, '\n')) = '\0';*/
-  /*dest.con = ssh_connection_new("jason", password);*/
-  /*dest.con->auth_pw = 1;*/
-  /*[>dest.con->hostaddr = inet_addr("127.0.0.1");<]*/
-  /*dest.con->hostaddr = inet_addr("98.225.21.217");*/
-  /*dest.con->port = 8022;*/
-  /*[>gscp(&src, &dest);<]*/
-  /*gscp(&dest, &src);*/
-
-  /*ssh_connection_free(dest.con);*/
-
-  /*libssh2_exit();*/
 
   libssh2_init(0);
 

@@ -30,6 +30,38 @@
 
 #include <gtk/gtk.h>
 
+
+void
+popup_message(GtkWindow *parent, const gchar *message)
+{
+  GtkWidget *dialog, *label, *content_area;
+  GtkDialogFlags flags;
+  flags = GTK_DIALOG_DESTROY_WITH_PARENT;
+  dialog = gtk_dialog_new_with_buttons ("GSCP",
+                                        parent,
+                                        flags,
+                                        "OK",
+                                        GTK_RESPONSE_NONE,
+                                        NULL);
+  content_area = gtk_dialog_get_content_area (GTK_DIALOG (dialog));
+  label = gtk_label_new (message);
+  g_signal_connect_swapped (dialog,
+                            "response",
+                            G_CALLBACK (gtk_widget_destroy),
+                            dialog);
+  gtk_container_add (GTK_CONTAINER (content_area), label);
+  gtk_widget_show_all (dialog);
+}
+
+void error_message(const char *message, int make_popup, GtkWindow *parent)
+{
+  fprintf(stderr, "%s\n", message);
+  if (make_popup)
+    {
+      popup_message(parent, message);
+    }
+}
+
 int read_from_ssh(ssh_path_info *info, char **data, size_t *mem_size)
 {
   *data = NULL;
@@ -386,7 +418,7 @@ int parse_ssh_path(const char *ssh_path, ssh_path_info *info)
   return 1;
 }
 
-int gscp(ssh_path_info *src, ssh_path_info *dest, GtkProgressBar *progress_bar)
+int gscp(ssh_path_info *src, ssh_path_info *dest, GtkProgressBar *progress_bar, int make_popups, GtkWindow *parent)
 {
   /*char *file_data;*/
   /*size_t mem_size;*/
@@ -402,7 +434,7 @@ int gscp(ssh_path_info *src, ssh_path_info *dest, GtkProgressBar *progress_bar)
   /*return 1;*/
   if (!is_valid_ssh_path(src) || !is_valid_ssh_path(dest))
     {
-      fprintf(stderr, "Error, invalid ssh path\n");
+      error_message("Error, invalid ssh path", make_popups, parent);
       return 0;
     }
 
@@ -445,7 +477,7 @@ int gscp(ssh_path_info *src, ssh_path_info *dest, GtkProgressBar *progress_bar)
   mem_buf = (char *) malloc(sizeof(char) * (mem_size));
   if (!mem_buf)
     {
-      fprintf(stderr, "Error allocating memory buffer");
+      error_message("Error allocating memory buffer", make_popups, parent);
       return 0;
     }
 
@@ -455,6 +487,8 @@ int gscp(ssh_path_info *src, ssh_path_info *dest, GtkProgressBar *progress_bar)
       if (!read_file)
         {
           fprintf(stderr, "Error opening file %s for reading\n", src->path);
+          if (make_popups)
+            popup_message(parent, "Error opening file for reading");
           free(mem_buf);
           return 0;
         }
@@ -476,6 +510,8 @@ int gscp(ssh_path_info *src, ssh_path_info *dest, GtkProgressBar *progress_bar)
         {
           free(mem_buf);
           fprintf(stderr, "Error opening remote file %s", src->path);
+          if (make_popups)
+            popup_message(parent, "Error opening remote file for reading");
           ssh_connection_session_close(&read_session, read_sock, "Error opening file for writing");
           return 0;
         }
@@ -489,6 +525,8 @@ int gscp(ssh_path_info *src, ssh_path_info *dest, GtkProgressBar *progress_bar)
         {
           free(mem_buf);
           fprintf(stderr, "Error opening file %s for writing\n", dest->path);
+          if (make_popups)
+            popup_message(parent, "Error opening file for writing");
           if (src->on_lhost)
             {
               fclose(read_file);
@@ -521,6 +559,8 @@ int gscp(ssh_path_info *src, ssh_path_info *dest, GtkProgressBar *progress_bar)
       if (!write_channel)
         {
           fprintf(stderr, "Error opening remote file %s", src->path);
+          if (make_popups)
+            popup_message(parent, "Error opening remote file for writing");
           free(mem_buf);
           if (src->on_lhost)
             {
@@ -565,7 +605,7 @@ int gscp(ssh_path_info *src, ssh_path_info *dest, GtkProgressBar *progress_bar)
             }
           if (bytes_read != bytes_to_read)
             {
-              fprintf(stderr, "Error reading file\n");
+              error_message("Error reading file", make_popups, parent);
               free(mem_buf);
               if (src->on_lhost)
                 {
@@ -612,7 +652,7 @@ int gscp(ssh_path_info *src, ssh_path_info *dest, GtkProgressBar *progress_bar)
             }
           if (bytes_written != bytes_to_write)
             {
-              fprintf(stderr, "Error writing to file\n");
+              error_message("Error writing to file", make_popups, parent);
               free(mem_buf);
               if (src->on_lhost)
                 {
@@ -643,7 +683,7 @@ int gscp(ssh_path_info *src, ssh_path_info *dest, GtkProgressBar *progress_bar)
           if (progress_bar)
             {
               double progress_fraction = (double) mem_written / read_file_size;
-              printf("mem written %zu read file size %zu fraction %f\n", mem_written, read_file_size, progress_fraction);
+              /*printf("mem written %zu read file size %zu fraction %f\n", mem_written, read_file_size, progress_fraction);*/
               gtk_progress_bar_set_fraction(progress_bar, progress_fraction);
             }
         }

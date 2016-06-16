@@ -55,8 +55,11 @@ int write_to_ssh(ssh_path_info *info, const char *data, size_t mem_size);
 
 int parse_ssh_path(const char *ssh_path, ssh_path_info *info);
 
-int gscp(ssh_path_info *src, ssh_path_info *dest, GtkProgressBar *progress_bar);
+int gscp(ssh_path_info *src, ssh_path_info *dest, GtkProgressBar *progress_bar, int make_popups, GtkWindow *parent);
 
 int get_ssh_path_info_from_user(ssh_path_info *info);
+
+void popup_message(GtkWindow *parent, const gchar *message);
+void error_message(const char *message, int make_popup, GtkWindow *parent);
 
 #endif /* SSHCONNECTION_H */ 
