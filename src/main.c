@@ -72,35 +72,88 @@ ssh_connection *dest_con;
 static void
 start_transfer()
 {
+  gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(progress_bar), 0);
   const char *src_path = gtk_entry_get_text(GTK_ENTRY(src_path_entry));
+  if (strlen(src_path) == 0)
+    {
+      popup_message(GTK_WINDOW(window), "Please enter a source path");
+      return;
+    }
   src_path_info->path = malloc(sizeof(char) * (strlen(src_path) + 1));
   strcpy(src_path_info->path, src_path);
   const char *dest_path = gtk_entry_get_text(GTK_ENTRY(dest_path_entry));
+  if (strlen(dest_path) == 0)
+    {
+      popup_message(GTK_WINDOW(window), "Please enter a destination path");
+      return;
+    }
   dest_path_info->path = malloc(sizeof(char) * (strlen(dest_path) + 1));
   strcpy(dest_path_info->path, dest_path);
-  if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(src_on_lhost_checkbox)))
+  if (!gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(src_on_lhost_checkbox)))
     {
-      src_path_info->on_lhost = 1;
+      src_path_info->on_lhost = 0;
+      const char *src_addr = gtk_entry_get_text(GTK_ENTRY(src_addr_entry));
+      if (strlen(src_addr) == 0)
+        {
+          popup_message(GTK_WINDOW(window), "Please enter a source address");
+          return;
+        }
       src_con->hostaddr = inet_addr(gtk_entry_get_text(GTK_ENTRY(src_addr_entry)));
-      src_con->port = atoi(gtk_entry_get_text(GTK_ENTRY(src_prt_entry)));
+      if (strlen(gtk_entry_get_text(GTK_ENTRY(src_prt_entry))) == 0)
+        {
+          src_con->port = SSH_DEFAULT_PORT;
+        }
+      else
+        src_con->port = atoi(gtk_entry_get_text(GTK_ENTRY(src_prt_entry)));
       const char *src_uname = gtk_entry_get_text(GTK_ENTRY(src_uname_entry));
+      if (strlen(src_uname) == 0)
+        {
+          popup_message(GTK_WINDOW(window), "Please enter a username for the source");
+          return;
+        }
       src_con->username = malloc(sizeof(char) * (strlen(src_uname) + 1));
       strcpy(src_con->username, src_uname);
-      const char *src_pwd = gtk_entry_get_text(GTK_ENTRY(src_uname_entry));
+      const char *src_pwd = gtk_entry_get_text(GTK_ENTRY(src_pwd_entry));
       src_con->password = malloc(sizeof(char) * (strlen(src_pwd) + 1));
       strcpy(src_con->password, src_pwd);
     }
-  if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(dest_on_lhost_checkbox)))
+  else
     {
-      dest_path_info->on_lhost = 1;
+      src_path_info->on_lhost = 1;
+    }
+  if (!gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(dest_on_lhost_checkbox)))
+    {
+      dest_path_info->on_lhost = 0;
+      const char *dest_addr = gtk_entry_get_text(GTK_ENTRY(dest_addr_entry));
+      if (strlen(dest_addr) == 0)
+        {
+          popup_message(GTK_WINDOW(window), "Please enter a destination address");
+          return;
+        }
       dest_con->hostaddr = inet_addr(gtk_entry_get_text(GTK_ENTRY(dest_addr_entry)));
-      dest_con->port = atoi(gtk_entry_get_text(GTK_ENTRY(dest_prt_entry)));
+      if (strlen(gtk_entry_get_text(GTK_ENTRY(dest_prt_entry))) == 0)
+        {
+          dest_con->port = SSH_DEFAULT_PORT;
+        }
+      else
+        dest_con->port = atoi(gtk_entry_get_text(GTK_ENTRY(dest_prt_entry)));
       const char *dest_uname = gtk_entry_get_text(GTK_ENTRY(dest_uname_entry));
+      if (strlen(dest_uname) == 0)
+        {
+          popup_message(GTK_WINDOW(window), "Please enter a username for the destinaction");
+          return;
+        }
       dest_con->username = malloc(sizeof(char) * (strlen(dest_uname) + 1));
       strcpy(dest_con->username, dest_uname);
       const char *dest_pwd = gtk_entry_get_text(GTK_ENTRY(dest_uname_entry));
       dest_con->password = malloc(sizeof(char) * (strlen(dest_pwd) + 1));
       strcpy(dest_con->password, dest_pwd);
+      printf("dest is on remote\n");
+    }
+  else
+    {
+      printf("dest is on local\n");
+      dest_path_info->on_lhost = 1;
     }
 
   int result;
@@ -291,7 +344,6 @@ app_shutdown(GApplication *application,
 
 int main(int argc, char *argv[])
 {
-
   libssh2_init(0);
 
   GtkApplication *app;

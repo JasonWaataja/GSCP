@@ -446,9 +446,14 @@ int gscp(ssh_path_info *src, ssh_path_info *dest, GtkProgressBar *progress_bar, 
   /*return 0;*/
 
   /*return 1;*/
-  if (!is_valid_ssh_path(src) || !is_valid_ssh_path(dest))
+  if (!is_valid_ssh_path(src))
     {
-      error_message("Error, invalid ssh path", make_popups, parent);
+      error_message("Error, invalid source path", make_popups, parent);
+      return 0;
+    }
+  if (!is_valid_ssh_path(dest))
+    {
+      error_message("Error, invalid destination path", make_popups, parent);
       return 0;
     }
 
@@ -513,9 +518,11 @@ int gscp(ssh_path_info *src, ssh_path_info *dest, GtkProgressBar *progress_bar, 
     }
   else
     {
+      printf("port %i\n", src->con->port);
       int result = ssh_connection_session_open(src->con, &read_sock, &read_session);
       if (!result)
         {
+          printf("Error with source sessoion\n");
           free(mem_buf);
           mem_buf = NULL;
           return 0;
@@ -560,6 +567,7 @@ int gscp(ssh_path_info *src, ssh_path_info *dest, GtkProgressBar *progress_bar, 
       int result = ssh_connection_session_open(dest->con, &write_sock, &write_session);
       if (!result)
         {
+          printf("error with dest session\n");
           free(mem_buf);
           mem_buf = NULL;
           if (src->on_lhost)
@@ -654,6 +662,12 @@ int gscp(ssh_path_info *src, ssh_path_info *dest, GtkProgressBar *progress_bar, 
             }
           read_pos += bytes_read;
           mem_read += bytes_read;
+          printf("Read %i bytes\n", bytes_read);
+          for (int i = 0; i < bytes_read; i++)
+            {
+              printf("%c", mem_buf[i]);
+            }
+          printf("\n");
         }
       /*printf("About to write\n");*/
       while (write_pos < read_pos && mem_written < read_file_size)
@@ -665,6 +679,7 @@ int gscp(ssh_path_info *src, ssh_path_info *dest, GtkProgressBar *progress_bar, 
           int bytes_written;
           if (dest->on_lhost)
             {
+              printf("Writing %zu bytes\n", bytes_to_write);
               bytes_written = fwrite(mem_buf + write_pos, sizeof(char), bytes_to_write, write_file);
             }
           else
@@ -742,13 +757,21 @@ int gscp(ssh_path_info *src, ssh_path_info *dest, GtkProgressBar *progress_bar, 
 int is_valid_ssh_path(ssh_path_info *info)
 {
   if (info == NULL)
+    {
+    printf("info is null\n");
     return 0;
+    }
 
   if (info->path == NULL)
+    {
+    printf("path is null");
     return 0;
+    }
 
   if (!info->on_lhost && !is_valid_ssh_connection(info->con))
+    {
     return 0;
+    }
 
   return 1;
 }
@@ -756,10 +779,16 @@ int is_valid_ssh_path(ssh_path_info *info)
 int is_valid_ssh_connection(ssh_connection *con)
 {
   if (con == NULL)
+    {
+    printf("Invalid connection\n");
     return 0;
+    }
 
   if (con->username == NULL)
+    {
+    printf("Invalid connection\n");
     return 0;
+    }
 
   return 1;
 }
