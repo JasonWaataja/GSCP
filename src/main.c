@@ -145,7 +145,7 @@ start_transfer()
         }
       dest_con->username = malloc(sizeof(char) * (strlen(dest_uname) + 1));
       strcpy(dest_con->username, dest_uname);
-      const char *dest_pwd = gtk_entry_get_text(GTK_ENTRY(dest_uname_entry));
+      const char *dest_pwd = gtk_entry_get_text(GTK_ENTRY(dest_pwd_entry));
       dest_con->password = malloc(sizeof(char) * (strlen(dest_pwd) + 1));
       strcpy(dest_con->password, dest_pwd);
       printf("dest is on remote\n");
