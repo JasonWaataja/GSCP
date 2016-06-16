@@ -1,7 +1,3 @@
-/*
- * Sample showing how to do a simple SCP transfer.
- */
-
 #include "libssh2_config.h"
 #include <libssh2.h>
 
