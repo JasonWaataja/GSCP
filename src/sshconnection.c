@@ -504,6 +504,7 @@ int gscp(ssh_path_info *src, ssh_path_info *dest, GtkProgressBar *progress_bar, 
           if (make_popups)
             popup_message(parent, "Error opening file for reading");
           free(mem_buf);
+          mem_buf = NULL;
           return 0;
         }
       fseek(read_file, 0, SEEK_END);
@@ -516,6 +517,7 @@ int gscp(ssh_path_info *src, ssh_path_info *dest, GtkProgressBar *progress_bar, 
       if (!result)
         {
           free(mem_buf);
+          mem_buf = NULL;
           return 0;
         }
       libssh2_struct_stat fileinfo;
@@ -523,6 +525,7 @@ int gscp(ssh_path_info *src, ssh_path_info *dest, GtkProgressBar *progress_bar, 
       if (!read_channel)
         {
           free(mem_buf);
+          mem_buf = NULL;
           fprintf(stderr, "Error opening remote file %s", src->path);
           if (make_popups)
             popup_message(parent, "Error opening remote file for reading");
@@ -538,6 +541,7 @@ int gscp(ssh_path_info *src, ssh_path_info *dest, GtkProgressBar *progress_bar, 
       if (!write_file)
         {
           free(mem_buf);
+          mem_buf = NULL;
           fprintf(stderr, "Error opening file %s for writing\n", dest->path);
           if (make_popups)
             popup_message(parent, "Error opening file for writing");
@@ -557,6 +561,7 @@ int gscp(ssh_path_info *src, ssh_path_info *dest, GtkProgressBar *progress_bar, 
       if (!result)
         {
           free(mem_buf);
+          mem_buf = NULL;
           if (src->on_lhost)
             {
               fclose(read_file);
@@ -576,6 +581,7 @@ int gscp(ssh_path_info *src, ssh_path_info *dest, GtkProgressBar *progress_bar, 
           if (make_popups)
             popup_message(parent, "Error opening remote file for writing");
           free(mem_buf);
+          mem_buf = NULL;
           if (src->on_lhost)
             {
               fclose(read_file);
@@ -621,6 +627,7 @@ int gscp(ssh_path_info *src, ssh_path_info *dest, GtkProgressBar *progress_bar, 
             {
               error_message("Error reading file", make_popups, parent);
               free(mem_buf);
+              mem_buf = NULL;
               if (src->on_lhost)
                 {
                   fclose(read_file);
@@ -668,6 +675,7 @@ int gscp(ssh_path_info *src, ssh_path_info *dest, GtkProgressBar *progress_bar, 
             {
               error_message("Error writing to file", make_popups, parent);
               free(mem_buf);
+              mem_buf = NULL;
               if (src->on_lhost)
                 {
                   fclose(read_file);
@@ -705,6 +713,7 @@ int gscp(ssh_path_info *src, ssh_path_info *dest, GtkProgressBar *progress_bar, 
       write_pos = 0;
     }
   free(mem_buf);
+  mem_buf = NULL;
   if (src->on_lhost)
     {
       fclose(read_file);
@@ -792,7 +801,9 @@ void ssh_connection_free(ssh_connection *con)
   if (con != NULL)
     {
       free(con->username);
+      con->username = NULL;
       free(con->password);
+      con->password = NULL;
     }
   free(con);
 }

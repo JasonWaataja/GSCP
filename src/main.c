@@ -180,8 +180,19 @@ activate (GtkApplication* app,
   dest_path_info = (ssh_path_info *) malloc(sizeof(ssh_path_info));
   src_con = (ssh_connection *) malloc(sizeof(ssh_connection));
   dest_con = (ssh_connection *) malloc(sizeof(ssh_connection));
+  if (!src_path_info || !dest_path_info || !src_con || !dest_con)
+    {
+      fprintf(stderr, "Error allocating memory\n");
+      return;
+    }
   src_path_info->con = src_con;
   dest_path_info->con = dest_con;
+  src_path_info->path = NULL;
+  src_con->username = NULL;
+  src_con->password = NULL;
+  dest_path_info->path = NULL;
+  dest_con->username = NULL;
+  dest_con->password = NULL;
 
   window = gtk_application_window_new (app);
   gtk_window_set_title (GTK_WINDOW (window), "GSCP");
@@ -257,16 +268,23 @@ static void
 app_shutdown(GApplication *application,
          gpointer      user_data)
 {
+  /*printf("Shutting down\n");*/
+  /*printf("src path info path %p\n", src_path_info->path);*/
   free(src_path_info->path);
   src_path_info->path = NULL;
+  /*printf("src path info %p\n", src_path_info);*/
   free(src_path_info);
   src_path_info = NULL;
+  /*printf("src_con %p\n", src_con);*/
   ssh_connection_free(src_con);
   src_con = NULL;
+  /*printf("dest_path_info %p\n", dest_path_info->path);*/
   free(dest_path_info->path);
   dest_path_info->path = NULL;
+  /*printf("dest_path_info %p\n", dest_path_info);*/
   free(dest_path_info);
   dest_path_info = NULL;
+  /*printf("dest_con %p\n", dest_con);*/
   ssh_connection_free(dest_con);
   dest_con = NULL;
 }
