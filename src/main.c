@@ -94,6 +94,14 @@ start_transfer()
 
   int result;
   result = gscp(src_path_info, dest_path_info, GTK_PROGRESS_BAR(progress_bar), 1, GTK_WINDOW(window));
+  if (result)
+    {
+      popup_message(GTK_WINDOW(window), "Transfer Completed");
+    }
+  else
+    {
+      /*popup_message(GTK_WINDOW(window), "Transfer Failed");*/
+    }
 }
 
 static void
