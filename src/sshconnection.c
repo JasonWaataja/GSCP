@@ -434,18 +434,6 @@ int parse_ssh_path(const char *ssh_path, ssh_path_info *info)
 
 int gscp(ssh_path_info *src, ssh_path_info *dest, GtkProgressBar *progress_bar, int make_popups, GtkWindow *parent)
 {
-  /*char *file_data;*/
-  /*size_t mem_size;*/
-  /*int result;*/
-  /*result = read_from_ssh(source, &file_data, &mem_size);*/
-  /*if (!result)*/
-  /*return 0;*/
-
-  /*result = write_to_ssh(dest, file_data, mem_size);*/
-  /*if (!result)*/
-  /*return 0;*/
-
-  /*return 1;*/
   if (!is_valid_ssh_path(src))
     {
       error_message("Error, invalid source path", make_popups, parent);
@@ -518,7 +506,6 @@ int gscp(ssh_path_info *src, ssh_path_info *dest, GtkProgressBar *progress_bar, 
     }
   else
     {
-      printf("port %i\n", src->con->port);
       int result = ssh_connection_session_open(src->con, &read_sock, &read_session);
       if (!result)
         {
