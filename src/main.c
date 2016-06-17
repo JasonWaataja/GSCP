@@ -72,7 +72,6 @@ ssh_connection *dest_con;
 static void
 start_transfer()
 {
-  gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(progress_bar), 0);
   const char *src_path = gtk_entry_get_text(GTK_ENTRY(src_path_entry));
   if (strlen(src_path) == 0)
     {
@@ -148,14 +147,12 @@ start_transfer()
       const char *dest_pwd = gtk_entry_get_text(GTK_ENTRY(dest_pwd_entry));
       dest_con->password = malloc(sizeof(char) * (strlen(dest_pwd) + 1));
       strcpy(dest_con->password, dest_pwd);
-      printf("dest is on remote\n");
     }
   else
     {
-      printf("dest is on local\n");
       dest_path_info->on_lhost = 1;
     }
-
+  gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(progress_bar), 0.0);
   int result;
   result = gscp(src_path_info, dest_path_info, GTK_PROGRESS_BAR(progress_bar), 1, GTK_WINDOW(window));
   if (result)
@@ -166,6 +163,7 @@ start_transfer()
     {
       /*popup_message(GTK_WINDOW(window), "Transfer Failed");*/
     }
+  /*gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(progress_bar), 0.0);*/
 }
 
 static void
@@ -311,6 +309,8 @@ activate (GtkApplication* app,
   g_signal_connect(G_OBJECT(start_button), "clicked", G_CALLBACK(start_transfer), NULL);
 
   progress_bar = gtk_progress_bar_new();
+  gtk_progress_bar_set_show_text(GTK_PROGRESS_BAR(progress_bar), TRUE);
+  gtk_progress_bar_set_text(GTK_PROGRESS_BAR(progress_bar), "Progress:");
   gtk_grid_attach(GTK_GRID(grid), progress_bar, 0, 7, 2, 1);
   /*gtk_widget_set_visible(progress_bar, FALSE);*/
 
