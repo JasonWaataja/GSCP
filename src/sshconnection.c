@@ -139,59 +139,6 @@ int read_from_ssh(ssh_path_info *info, char **data, size_t *mem_size)
         {
           return 0;
         }
-      /*#ifdef WIN32*/
-      /*WSADATA wsadata;*/
-      /*int err;*/
-
-      /*err = WSAStartup(MAKEWORD(2,0), &wsadata);*/
-      /*if (err != 0) {*/
-      /*fprintf(stderr, "WSAStartup failed with error: %d\n", err);*/
-      /*return 0;*/
-      /*}*/
-      /*#endif*/
-
-      /*[> Right now I'm assuming that libssh2 has been init with libssh2_init(0).  <]*/
-
-      /*int sock = socket(AF_INET, SOCK_STREAM, 0);*/
-      /*struct sockaddr_in sin;*/
-      /*sin.sin_family = AF_INET;*/
-      /*sin.sin_port = htons(info->con->port);*/
-      /*sin.sin_addr.s_addr = info->con->hostaddr;*/
-      /*[>sin.sin_addr.s_addr = inet_addr("127.0.0.1");<]*/
-      /*if (connect(sock, (struct sockaddr*)(&sin), sizeof(struct sockaddr_in)) != 0)*/
-      /*{*/
-      /*fprintf(stderr, "failed to connect!\n");*/
-      /*return 0;*/
-      /*}*/
-
-      /*LIBSSH2_SESSION *session = libssh2_session_init();*/
-      /*if (!session)*/
-      /*return 0;*/
-
-      /*result = libssh2_session_handshake(session, sock);*/
-      /*if (result)*/
-      /*{*/
-      /*fprintf(stderr, "Failure establishing SSH session: %d\n", result);*/
-      /*close_socket(sock);*/
-      /*return 0;*/
-      /*}*/
-      /*const char *finger_temp;*/
-      /*finger_temp = libssh2_hostkey_hash(session, LIBSSH2_HOSTKEY_HASH_SHA1);*/
-      /*[> Check to see if it's NULL.  <]*/
-      /*[>size_t finger_len = strlen(finger_temp);<]*/
-      /*[>info->con->fingerprint = malloc(sizeof(char) * (finger_len + 1));<]*/
-      /*[>strcpy(info->con->fingerprint, finger_temp);<]*/
-
-      /*int auth_success = libssh2_userauth_password(session, info->con->username, info->con->password);*/
-      /*if (auth_success)*/
-      /*{*/
-      /*fprintf(stderr, "Authentication by password failed.\n");*/
-      /*libssh2_session_disconnect(session,*/
-      /*"Error: Failure authenticating.");*/
-      /*libssh2_session_free(session);*/
-      /*close_socket(sock);*/
-      /*return 0;*/
-      /*}*/
       LIBSSH2_CHANNEL *channel;
       libssh2_struct_stat fileinfo;
       channel = libssh2_scp_recv2(session, info->path, &fileinfo);
@@ -522,6 +469,19 @@ int gscp(ssh_path_info *src, ssh_path_info *dest, GtkProgressBar *progress_bar, 
       int result = ssh_connection_session_open(src->con, &read_sock, &read_session);
       if (!result)
         {
+          if (make_popups)
+            {
+              GtkWidget *dialog = gtk_message_dialog_new(parent,
+                                                                GTK_DIALOG_MODAL,
+                                                                GTK_MESSAGE_INFO,
+                                                                GTK_BUTTONS_OK,
+                                                                "Error connecting to source on address %d on port %i",
+                                                                src->con->hostaddr,
+                                                                src->con->port);
+              g_signal_connect_swapped(G_OBJECT(dialog), "response", G_CALLBACK(gtk_widget_destroy), dialog);
+              gtk_dialog_run(GTK_DIALOG(dialog));
+            }
+
           free(mem_buf);
           mem_buf = NULL;
           return 0;
@@ -568,6 +528,19 @@ int gscp(ssh_path_info *src, ssh_path_info *dest, GtkProgressBar *progress_bar, 
         {
           free(mem_buf);
           mem_buf = NULL;
+          if (make_popups)
+            {
+              GtkWidget *dialog = gtk_message_dialog_new(parent,
+                                                                GTK_DIALOG_MODAL,
+                                                                GTK_MESSAGE_INFO,
+                                                                GTK_BUTTONS_OK,
+                                                                "Error connecting to destination on address %d on port %i",
+                                                                dest->con->hostaddr,
+                                                                dest->con->port);
+              g_signal_connect_swapped(G_OBJECT(dialog), "response", G_CALLBACK(gtk_widget_destroy), dialog);
+              gtk_dialog_run(GTK_DIALOG(dialog));
+            }
+
           if (src->on_lhost)
             {
               fclose(read_file);
@@ -891,7 +864,7 @@ int ssh_connection_session_open(ssh_connection *con, int *sock, LIBSSH2_SESSION 
   /*sin.sin_addr.s_addr = inet_addr("127.0.0.1");*/
   if (connect(*sock, (struct sockaddr *)(&sin), sizeof(struct sockaddr_in)) != 0)
     {
-      fprintf(stderr, "Error, failed to connect to ip %i on port %i\n", con->hostaddr, con->port);
+      fprintf(stderr, "Error, failed to connect to address %i on port %i\n", con->hostaddr, con->port);
       return 0;
     }
 
