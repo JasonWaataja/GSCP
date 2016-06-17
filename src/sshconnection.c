@@ -445,10 +445,10 @@ int gscp(ssh_path_info *src, ssh_path_info *dest, GtkProgressBar *progress_bar, 
       return 0;
     }
 
-  if (progress_bar)
-    {
-      gtk_widget_set_visible(GTK_WIDGET(progress_bar), TRUE);
-    }
+  /*if (progress_bar)*/
+    /*{*/
+      /*gtk_widget_set_visible(GTK_WIDGET(progress_bar), TRUE);*/
+    /*}*/
 
   char *mem_buf;
   size_t mem_size;
@@ -699,6 +699,7 @@ int gscp(ssh_path_info *src, ssh_path_info *dest, GtkProgressBar *progress_bar, 
           if (progress_bar)
             {
               double progress_fraction = (double) mem_written / read_file_size;
+              /*printf("%f\n", progress_fraction);*/
               /*printf("mem written %zu read file size %zu fraction %f\n", mem_written, read_file_size, progress_fraction);*/
               gtk_progress_bar_set_fraction(progress_bar, progress_fraction);
             }
