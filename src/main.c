@@ -45,9 +45,12 @@
 
 #include "sshconnection.h"
 
+/* Main window. */
 GtkWidget *window;
+/* The main grid for the window. */
 GtkWidget *grid;
 
+/* Gui elements. */
 GtkWidget *src_on_lhost_checkbox;
 GtkWidget *dest_on_lhost_checkbox;
 GtkWidget *src_addr_entry;
@@ -63,15 +66,40 @@ GtkWidget *src_uname_entry;
 GtkWidget *dest_uname_entry;
 GtkWidget *progress_bar;
 
+/* The ssh connection info and whether or not it's stored on the local machine.  */
 ssh_path_info *src_path_info;
 ssh_path_info *dest_path_info;
 ssh_connection *src_con;
 ssh_connection *dest_con;
 
+/* The function to call to start the file transfer using the information filled
+   out in the boxes.  */
+static void
+start_transfer ();
+
+/* The function to call when the on local filesystem checkbox is toggled.  */
+static void
+src_on_lhost_checkbox_toggled();
+
+/* The function to call when the on local filesystem checkbox is toggled.  */
+static void
+dest_on_lhost_checkbox_toggled();
+
+/* The activate function that sets up the gui.  */
+static void
+activate (GtkApplication* app,
+          gpointer        user_data);
+
+/* The shutdown function that does some cleanup.  */
+static void
+app_shutdown(GApplication *application,
+         gpointer      user_data);
+
 
 static void
-start_transfer()
+start_transfer ()
 {
+  /* Get paths and check them.  */
   const char *src_path = gtk_entry_get_text(GTK_ENTRY(src_path_entry));
   if (strlen(src_path) == 0)
     {
@@ -88,6 +116,8 @@ start_transfer()
     }
   dest_path_info->path = malloc(sizeof(char) * (strlen(dest_path) + 1));
   strcpy(dest_path_info->path, dest_path);
+  /* If the on local filesystem button is on, make sure the correct connection
+     code is done.  */
   if (!gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(src_on_lhost_checkbox)))
     {
       src_path_info->on_lhost = 0;
@@ -169,6 +199,7 @@ start_transfer()
 static void
 src_on_lhost_checkbox_toggled()
 {
+  /* When the on local filesystem is checked, hide the ssh information.  */
   gboolean is_checked = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(src_on_lhost_checkbox));
   if (is_checked)
     {
@@ -197,6 +228,7 @@ src_on_lhost_checkbox_toggled()
 static void
 dest_on_lhost_checkbox_toggled()
 {
+  /* When the on local filesystem is checked, hide the ssh information.  */
   gboolean is_checked = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(dest_on_lhost_checkbox));
   if (is_checked)
     {
@@ -227,6 +259,7 @@ static void
 activate (GtkApplication* app,
           gpointer        user_data)
 {
+  /* Allocate the new objects.  */
   src_path_info = (ssh_path_info *) malloc(sizeof(ssh_path_info));
   dest_path_info = (ssh_path_info *) malloc(sizeof(ssh_path_info));
   src_con = (ssh_connection *) malloc(sizeof(ssh_connection));
@@ -245,6 +278,7 @@ activate (GtkApplication* app,
   dest_con->username = NULL;
   dest_con->password = NULL;
 
+  /* Setup the new window.  */
   window = gtk_application_window_new (app);
   gtk_window_set_title (GTK_WINDOW (window), "GSCP");
   gtk_window_set_resizable(GTK_WINDOW(window), FALSE);
@@ -252,8 +286,10 @@ activate (GtkApplication* app,
   gtk_container_add(GTK_CONTAINER(window), grid);
   /*gtk_window_set_default_size (GTK_WINDOW (window), 200, 200);*/
 
+  /* Setup other gui elements.  */
   src_on_lhost_checkbox = gtk_check_button_new_with_label("On Local Filesystem");
-  g_signal_connect(G_OBJECT(src_on_lhost_checkbox), "toggled", G_CALLBACK(src_on_lhost_checkbox_toggled), NULL);
+  g_signal_connect(G_OBJECT(src_on_lhost_checkbox), "toggled",
+                   G_CALLBACK(src_on_lhost_checkbox_toggled), NULL);
   gtk_grid_attach(GTK_GRID(grid), src_on_lhost_checkbox, 0, 0, 1, 1);
   src_path_entry = gtk_entry_new();
   gtk_entry_set_placeholder_text(GTK_ENTRY(src_path_entry), "Path");
@@ -279,7 +315,8 @@ activate (GtkApplication* app,
 
 
   dest_on_lhost_checkbox = gtk_check_button_new_with_label("On Local Filesystem");
-  g_signal_connect(G_OBJECT(dest_on_lhost_checkbox), "toggled", G_CALLBACK(dest_on_lhost_checkbox_toggled), NULL);
+  g_signal_connect(G_OBJECT(dest_on_lhost_checkbox), "toggled",
+                   G_CALLBACK(dest_on_lhost_checkbox_toggled), NULL);
   gtk_grid_attach(GTK_GRID(grid), dest_on_lhost_checkbox, 1, 0, 1, 1);
   dest_path_entry = gtk_entry_new();
   gtk_entry_set_placeholder_text(GTK_ENTRY(dest_path_entry), "Path");
@@ -314,6 +351,7 @@ activate (GtkApplication* app,
   gtk_grid_attach(GTK_GRID(grid), progress_bar, 0, 7, 2, 1);
   /*gtk_widget_set_visible(progress_bar, FALSE);*/
 
+  /* Show the window and all its elements.  */
   gtk_widget_show_all (window);
 }
 
@@ -321,6 +359,8 @@ static void
 app_shutdown(GApplication *application,
          gpointer      user_data)
 {
+  /* Free all of the elements.  */
+
   /*printf("Shutting down\n");*/
   /*printf("src path info path %p\n", src_path_info->path);*/
   free(src_path_info->path);
@@ -344,18 +384,23 @@ app_shutdown(GApplication *application,
 
 int main(int argc, char *argv[])
 {
+  /* Initialize the libssh2 library.  */
   libssh2_init(0);
 
   GtkApplication *app;
   int status;
 
+  /* Create a new application and tell it what to do on startup and shutdown.
+  */
   app = gtk_application_new ("com.waataja.gscp", G_APPLICATION_FLAGS_NONE);
   g_signal_connect (app, "activate", G_CALLBACK (activate), NULL);
   g_signal_connect(app, "shutdown", G_CALLBACK(app_shutdown), NULL);
   status = g_application_run (G_APPLICATION (app), argc, argv);
   g_object_unref (app);
 
+  /* Exit the libssh2 library.  */
   libssh2_exit();
 
+  /* Return the same status that the gapplication returned.  */
   return status;
 }

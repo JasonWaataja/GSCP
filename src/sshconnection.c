@@ -46,26 +46,9 @@
 
 
 void
-popup_message(GtkWindow *parent, const gchar *message)
+popup_message (GtkWindow *parent, const gchar *message)
 {
-  /*GtkWidget *dialog, *label, *content_area;*/
-  /*GtkDialogFlags flags;*/
-  /*flags = GTK_DIALOG_MODAL;*/
-  /*dialog = gtk_dialog_new_with_buttons (NULL,*/
-                                        /*parent,*/
-                                        /*flags,*/
-                                        /*"OK",*/
-                                        /*GTK_RESPONSE_NONE,*/
-                                        /*NULL);*/
-  /*content_area = gtk_dialog_get_content_area (GTK_DIALOG (dialog));*/
-  /*label = gtk_label_new (message);*/
-  /*g_signal_connect_swapped (dialog,*/
-                            /*"response",*/
-                            /*G_CALLBACK (gtk_widget_destroy),*/
-                            /*dialog);*/
-  /*gtk_container_add (GTK_CONTAINER (content_area), label);*/
-  /*[>gtk_dialog_run(GTK_DIALOG(dialog));<]*/
-  /*gtk_widget_show_all (dialog);*/
+  /* Create a modal dialog with an ok button and the given message.  */
   GtkWidget *dialog;
   dialog = gtk_message_dialog_new(parent,
                                   GTK_DIALOG_MODAL,
@@ -80,17 +63,21 @@ popup_message(GtkWindow *parent, const gchar *message)
   gtk_dialog_run(GTK_DIALOG(dialog));
 }
 
-void error_message(const char *message, int make_popup, GtkWindow *parent)
+void error_message (const char *message, int make_popup, GtkWindow *parent)
 {
+  /* Print to stderr.  */
   fprintf(stderr, "%s\n", message);
+  /* If make_popup is true, create a popup with popup_message ().  */
   if (make_popup)
     {
       popup_message(parent, message);
     }
 }
 
-int read_from_ssh(ssh_path_info *info, char **data, size_t *mem_size)
+int read_from_ssh (ssh_path_info *info, char **data, size_t *mem_size)
 {
+  /* Set the contents of data to NULL.  This is so that if the function
+     exists on an error, that it won't contain anything.  */
   *data = NULL;
 
   if (!is_valid_ssh_path(info))
@@ -99,6 +86,8 @@ int read_from_ssh(ssh_path_info *info, char **data, size_t *mem_size)
       return 0;
     }
 
+  /* If it's on the localhost, then create a new file object and read it
+     into data.  */
   if (info->on_lhost)
     {
       FILE *local_file;
@@ -129,6 +118,7 @@ int read_from_ssh(ssh_path_info *info, char **data, size_t *mem_size)
       fclose(local_file);
       return 1;
     }
+  /* If it's over ssh, read from ssh.  */
   else
     {
       int result;
@@ -232,6 +222,8 @@ int write_to_ssh(ssh_path_info *info, const char *data, size_t mem_size)
     {
       return 0;
     }
+  /* If it's on the local host, write to the file using the c
+     standard library.  */
   if (info->on_lhost)
     {
       FILE *local_file;
@@ -257,76 +249,23 @@ int write_to_ssh(ssh_path_info *info, const char *data, size_t mem_size)
       local_file = NULL;
       return 1;
     }
+  /* If it's over ssh, write to ssh.  */
   else
     {
       int result;
       int sock;
       LIBSSH2_SESSION *session;
       result = ssh_connection_session_open(info->con, &sock, &session);
-      /*#ifdef WIN32*/
-      /*WSADATA wsadata;*/
-      /*int err;*/
-
-      /*err = WSAStartup(MAKEWORD(2,0), &wsadata);*/
-      /*if (err != 0) {*/
-      /*fprintf(stderr, "WSAStartup failed with error: %d\n", err);*/
-      /*return 0;*/
-      /*}*/
-      /*#endif*/
-      /*int sock = socket(AF_INET, SOCK_STREAM, 0);*/
-      /*struct sockaddr_in sin;*/
-      /*sin.sin_family = AF_INET;*/
-      /*sin.sin_port = htons(info->con->port);*/
-      /*sin.sin_addr.s_addr = info->con->hostaddr;*/
-      /*if (connect(sock, (struct sockaddr*)(&sin), sizeof(struct sockaddr_in)) != 0)*/
-      /*{*/
-      /*fprintf(stderr, "failed to connect!\n");*/
-      /*return 0;*/
-      /*}*/
-      /*LIBSSH2_SESSION *session = libssh2_session_init();*/
-      /*if (!session)*/
-      /*{*/
-      /*return 0;*/
-      /*}*/
-
-      /*result = libssh2_session_handshake(session, sock);*/
-      /*if (result)*/
-      /*{*/
-      /*fprintf(stderr, "Failure establishing SSH session: %d\n", result);*/
-      /*close_socket(sock);*/
-      /*return 0;*/
-      /*}*/
-      /*const char *finger_temp;*/
-      /*finger_temp = libssh2_hostkey_hash(session, LIBSSH2_HOSTKEY_HASH_SHA1);*/
-      /*int auth_success = libssh2_userauth_password(session, info->con->username, info->con->password);*/
-      /*if (auth_success)*/
-      /*{*/
-      /*fprintf(stderr, "Authentication by password failed.\n");*/
-      /*libssh2_session_disconnect(session,*/
-      /*"Error: Failure authenticating.");*/
-      /*libssh2_session_free(session);*/
-      /*close_socket(sock);*/
-      /*return 0;*/
-      /*}*/
       LIBSSH2_CHANNEL *channel;
       libssh2_struct_stat fileinfo;
-      /*channel = libssh2_scp_send64(session, info->path, fileinfo.st_mode & 0777,*/
-      /*(unsigned long)fileinfo.st_size, 0, 0);*/
       channel = libssh2_scp_send64(session, info->path, 0777,
                                    mem_size, 0, 0);
-      /*channel = libssh2_scp_send(session, info->path, fileinfo.st_mode & 0777,*/
-      /*(unsigned long)fileinfo.st_size);*/
-      /*channel = libssh2_scp_send(session, info->path, fileinfo.st_mode & 0777,*/
-      /*(unsigned long)fileinfo.st_size);*/
       if (!channel)
         {
           char *errmsg;
           int errlen;
           int err = libssh2_session_last_error(session, &errmsg, &errlen, 0);
           fprintf(stderr, "Unable to open a session: (%d) %s\n", err, errmsg);
-          /*libssh2_session_disconnect(session, "Error");*/
-          /*libssh2_session_free(session);*/
-          /*close_socket(sock);*/
           ssh_connection_session_close(&session, sock, "Error, unable to open a session");
         }
       size_t current_pos = 0;
@@ -336,18 +275,11 @@ int write_to_ssh(ssh_path_info *info, const char *data, size_t mem_size)
         {
           write_size = ((mem_size - current_pos >= SSH_WRITE_SIZE) ? SSH_WRITE_SIZE
                         : (mem_size - current_pos));
-          /*printf("%zu\n", write_size);*/
           bytes_written = libssh2_channel_write(channel, data + current_pos, write_size);
-          /*printf("%zu bytes written.\n", bytes_written);*/
           if (bytes_written < 0)
             {
               fprintf(stderr, "Error sending data.\n");
 
-              /*fprintf(stderr, "Sending EOF\n");*/
-              /*libssh2_channel_send_eof(channel);*/
-
-              /*fprintf(stderr, "Waiting for EOF\n");*/
-              /*libssh2_channel_wait_eof(channel);*/
               ssh_channel_send_send_eof(channel);
 
               fprintf(stderr, "Waiting for channel to close\n");
@@ -355,45 +287,31 @@ int write_to_ssh(ssh_path_info *info, const char *data, size_t mem_size)
 
               libssh2_channel_free(channel);
               channel = NULL;
-              /*libssh2_session_disconnect(session, "Error");*/
-              /*libssh2_session_free(session);*/
-              /*close_socket(sock);*/
               ssh_connection_session_close(&session, sock, "Error");
               return 0;
             }
           current_pos += bytes_written;
         }
       while (current_pos < mem_size);
-      /*printf("Done Writing");*/
-
-      /*fprintf(stderr, "Sending EOF\n");*/
-      /*libssh2_channel_send_eof(channel);*/
-
-      /*fprintf(stderr, "Waiting for EOF\n");*/
-      /*libssh2_channel_wait_eof(channel);*/
-
-      /*fprintf(stderr, "Waiting for channel to close\n");*/
-      /*libssh2_channel_wait_closed(channel);*/
       ssh_channel_send_send_eof(channel);
 
       libssh2_channel_free(channel);
       channel = NULL;
-      /*libssh2_session_disconnect(session, "Shutting Down");*/
-      /*libssh2_session_free(session);*/
-      /*close_socket(sock);*/
       ssh_connection_session_close(&session, sock, "Shutting down");
 
       return 1;
     }
 }
 
-int parse_ssh_path(const char *ssh_path, ssh_path_info *info)
+int parse_ssh_path (const char *ssh_path, ssh_path_info *info)
 {
-  return 1;
+  /* This functin isn't written so fail.  */
+  return 0;
 }
 
-int gscp(ssh_path_info *src, ssh_path_info *dest, GtkProgressBar *progress_bar, int make_popups, GtkWindow *parent)
+int gscp (ssh_path_info *src, ssh_path_info *dest, GtkProgressBar *progress_bar, int make_popups, GtkWindow *parent)
 {
+  /* If either of the paths and connections are invalis, then fail.  */
   if (!is_valid_ssh_path(src))
     {
       error_message("Error, invalid source path", make_popups, parent);
@@ -410,12 +328,25 @@ int gscp(ssh_path_info *src, ssh_path_info *dest, GtkProgressBar *progress_bar, 
       /*gtk_widget_set_visible(GTK_WIDGET(progress_bar), TRUE);*/
     /*}*/
 
+  
+
+  /* For this next section, it has a temporary buffer. Data is read correctly
+     from src, then storred in mem_buf.  mem_buf is then read and written to
+     dest.  */
+
+  /* The memory buffer to temporarily store data being transferred.  */
   char *mem_buf;
+  /* Thes size of mem_buf.  */
   size_t mem_size;
+  /* The position in mem_buf that is currently being written to.  */
   size_t read_pos = 0;
+  /* The position in mem_buf that is currently being read from.  */
   size_t write_pos = 0;
+  /* The size of the file, in bytes.  */
   libssh2_struct_stat_size read_file_size;
+  /* The amount of memory in bytes that has been read from src.  */
   size_t mem_read = 0; /* Note, this is read as "red" because it's past tense.  */
+  /* The amount of memory in bytes that has been written to dest.  */
   size_t mem_written = 0;
 
   /* Either the ssh or file objects are used based on whether or not it's local.  */
@@ -428,19 +359,28 @@ int gscp(ssh_path_info *src, ssh_path_info *dest, GtkProgressBar *progress_bar, 
   FILE *read_file;
   FILE *write_file;
 
+  /* The amount of bytes that should be read every time. It's different
+     based on wheter or not the file is local or over ssh.  */
   size_t read_size;
+  /* The amount of bytes that should be written every time. It's different
+     based on wheter or not the file is local or over ssh.  */
   size_t write_size;
+  /* Set read_size correctly based on whether it's a local file or over ssh.  */
   if (src->on_lhost)
     read_size = FILE_READ_SIZE;
   else
     read_size = SSH_READ_SIZE;
+  /* Do the same for the write size.  */
   if (dest->on_lhost)
     write_size = FILE_WRITE_SIZE;
   else
     write_size = SSH_WRITE_SIZE;
 
+  /* Set mem_size to the greatr of read_size and write_size.  This is
+     so that the buffer can accommodate both sizes.  */
   mem_size = (read_size > write_size) ? read_size : write_size;
 
+  /* Allocate mem_buff.  */
   mem_buf = (char *) malloc(sizeof(char) * (mem_size));
   if (!mem_buf)
     {
@@ -448,6 +388,7 @@ int gscp(ssh_path_info *src, ssh_path_info *dest, GtkProgressBar *progress_bar, 
       return 0;
     }
 
+  /* If src is on the localhost, open using file io.  Else, open it over ssh.  */
   if (src->on_lhost)
     {
       read_file = fopen(src->path, "rb");
@@ -501,6 +442,7 @@ int gscp(ssh_path_info *src, ssh_path_info *dest, GtkProgressBar *progress_bar, 
       read_file_size = fileinfo.st_size;
       /*printf("fileinfo.st_size %ld\n", fileinfo.st_size);*/
     }
+  /* If dest is on the localhost, open using file io.  Else, open it over ssh.  */
   if (dest->on_lhost)
     {
       write_file = fopen(dest->path, "wb");
@@ -578,18 +520,18 @@ int gscp(ssh_path_info *src, ssh_path_info *dest, GtkProgressBar *progress_bar, 
     }
 
   int result;
-  /*printf("read_file_size %lu\n", read_file_size);*/
+  /* Repeat until all of the data has been read from src.  */
   while (mem_read < read_file_size)
     {
-      /*printf("About to read\n");*/
+      /* Now, read data from src into mem_buff.  Stop when either
+         the buffer is full or the end of the file has been reached.  */
       while (read_pos < mem_size && mem_read < read_file_size)
         {
-          /*printf("read_pos %zu\n", read_pos);*/
-          /* find the minumum amount of bytes to install whether that be
-             the read size, the remaining bytes of the memory buffer, or
-             the remaining bytes to read in the file */
           size_t remaining_bytes_buff = mem_size - read_pos;
           size_t remaining_bytes_file = read_file_size - mem_read;
+          /* Set the amount of bytes to read to be the least of these three values:
+             the remaining memory in the buffer, the remaining bytes in the file, or
+             the maximum amount of data to be read every time.  */
           size_t bytes_to_read = (remaining_bytes_buff < read_size) ? remaining_bytes_buff : read_size;
           bytes_to_read = (remaining_bytes_file < bytes_to_read) ? remaining_bytes_file : bytes_to_read;
           /*printf("bytes_to_read %zu\n", bytes_to_read);*/
@@ -602,7 +544,8 @@ int gscp(ssh_path_info *src, ssh_path_info *dest, GtkProgressBar *progress_bar, 
             {
               bytes_read = libssh2_channel_read(read_channel, mem_buf + read_pos, bytes_to_read);
             }
-          /*if (bytes_read != bytes_to_read)*/
+          /* The return value of both functions is the amount of bytes read so if it's less than zero
+             there was an error.  */
           if (bytes_read < 0)
             {
               error_message("Error reading file", make_popups, parent);
@@ -632,14 +575,22 @@ int gscp(ssh_path_info *src, ssh_path_info *dest, GtkProgressBar *progress_bar, 
                 }
               return 0;
             }
+          /* Make sure that the amount of bytes read and the amount of total
+             memory read is updates.  */
           read_pos += bytes_read;
           mem_read += bytes_read;
         }
-      /*printf("About to write\n");*/
+      /* Now that a block of memory has been read, write all of it to
+         dest. Stop when either as much data has been written as has been read
+         or the amount of data is the amount as the total size of the total.  */
       while (write_pos < read_pos && mem_written < read_file_size)
         {
           size_t remaining_bytes_buff = read_pos - write_pos;
           size_t remaining_bytes_file = read_file_size - mem_written;
+          /* Set the amount of bytes to write to be the least of thes three:
+             the amount of bytes between the current position and the amount of data
+             read, the amount of bytes left in the file, or the maximum amount to write
+             at once.  */
           size_t bytes_to_write = (remaining_bytes_buff < write_size) ? remaining_bytes_buff : write_size;
           bytes_to_write = (remaining_bytes_file < bytes_to_write) ? remaining_bytes_file : bytes_to_write;
           int bytes_written;
@@ -680,6 +631,8 @@ int gscp(ssh_path_info *src, ssh_path_info *dest, GtkProgressBar *progress_bar, 
                 }
               return 0;
             }
+          /* Make sure that the current write position and the total amount written
+             are updates.  */
           write_pos += bytes_written;
           mem_written += bytes_written;
           if (progress_bar)
@@ -690,9 +643,11 @@ int gscp(ssh_path_info *src, ssh_path_info *dest, GtkProgressBar *progress_bar, 
               gtk_progress_bar_set_fraction(progress_bar, progress_fraction);
             }
         }
+      /* Reset the read and write positions so that they will start over.  */
       read_pos = 0;
       write_pos = 0;
     }
+  /* Do the cleanup.  */
   free(mem_buf);
   mem_buf = NULL;
   if (src->on_lhost)
