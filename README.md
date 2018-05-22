@@ -1,10 +1,10 @@
 # GSCP
 
 GSCP stands for Gtk SCP. It is a simple gui that transfers files via the ssh
-protocol. It does not call scp, rather, it has its own code for tranferring
+protocol. It does not call scp, rather, it has its own code for transferring
 files. The GUI is simple and doesn't feature a file manager like interface,
 although it may someday.  This was done for a computer science project in very
-little time so it is not well coded and doesn'v have features.
+little time so there are huge issues and is mainly here as an archive.
 
 # Installation
 
